@@ -18,6 +18,9 @@ LABELS = {"480": "480p", "720": "720p", "1080": "1080p", "2k": "2K", "4k": "4K"}
 EXT = {".mp4", ".webm", ".mkv", ".mov", ".m4v", ".avi", ".mp3", ".m4a", ".ogg", ".wav", ".flac"}
 UA = {"User-Agent": "Mozilla/5.0 V-Downloader-Pro"}
 JOBS, HITS = {}, {}
+FONT = next((p for p in ("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+                         "/usr/share/fonts/dejavu/DejaVuSans-Bold.ttf") if os.path.exists(p)), None)
+POS = {"tl": "x=24:y=24", "tr": "x=w-tw-24:y=24", "bl": "x=24:y=h-th-24", "br": "x=w-tw-24:y=h-th-24"}
 
 app = Flask(__name__, static_folder="static")
 
@@ -157,7 +160,7 @@ def info():
         return jsonify(kind="direct", title=name, size=size, duration=None, thumbnail=None,
                        format=os.path.splitext(name)[1].lstrip(".") or ct.split("/")[-1],
                        qualities=[{"id": "original", "label": "Original quality", "sub": "Source file as is"}],
-                       audio=bool(FFMPEG))
+                       audio=bool(FFMPEG), watermark=bool(FFMPEG))
     r.close()
     if not yt_dlp:
         return jsonify(error="This is not a direct video file link."), 400
@@ -175,7 +178,7 @@ def info():
         quals = [{"id": "best", "label": "Best available", "sub": f"{best}p" if best else "Audio only"}]
     return jsonify(kind="extracted", title=d.get("title") or "Untitled", thumbnail=d.get("thumbnail"),
                    duration=d.get("duration_string"), format=d.get("ext"),
-                   size=quals[-1].get("size"), qualities=quals, audio=bool(FFMPEG))
+                   size=quals[-1].get("size"), qualities=quals, audio=bool(FFMPEG), watermark=bool(FFMPEG))
 
 
 # ---------- direct streaming (original file, no server storage) ----------
@@ -218,8 +221,35 @@ def convert(j, src, outname):
     j["path"], j["name"] = out, outname
 
 
-def run_direct_audio(j, url, q):
-    if q != "mp3":
+def clean_wm_text(wm):
+    return "".join(c for c in str((wm or {}).get("text") or "") if c.isprintable())[:40].strip()
+
+
+def apply_wm(j, wm):
+    text = clean_wm_text(wm)
+    if not text:
+        raise ValueError("Enter the watermark name.")
+    j["status"], j["pct"] = "processing", 100
+    tf, out = os.path.join(j["dir"], "wm.txt"), os.path.join(j["dir"], "wm_out.mp4")
+    with open(tf, "w", encoding="utf-8") as f:
+        f.write(text)
+    flt = "drawtext=textfile=%s:%sfontcolor=white@0.85:fontsize=h/24:box=1:boxcolor=black@0.35:boxborderw=10:%s" % (
+        tf, f"fontfile={FONT}:" if FONT else "", POS.get(wm.get("pos"), POS["br"]))
+    pr = subprocess.Popen([FFMPEG, "-y", "-i", j["path"], "-vf", flt, "-c:v", "libx264", "-preset", "veryfast",
+                           "-crf", "23", "-c:a", "aac", "-b:a", "160k", "-movflags", "+faststart", out],
+                          stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    while pr.poll() is None:
+        if j["cancel"].is_set():
+            pr.kill()
+            raise Cancelled
+        time.sleep(0.5)
+    if pr.returncode:
+        raise ValueError("Adding the watermark failed.")
+    j["path"], j["name"] = out, os.path.splitext(j["name"])[0] + "_watermarked.mp4"
+
+
+def run_direct(j, url, q, wm=None):
+    if q != "mp3" and not wm:
         raise ValueError("Use the direct download for the original file.")
     r, final = open_url(url)
     ok, _ = is_media(r, final)
@@ -239,11 +269,15 @@ def run_direct_audio(j, url, q):
             f.write(c)
             j["pct"] = got * 100 / total if total else 0
     r.close()
-    j["status"] = "processing"
-    convert(j, src, os.path.splitext(name)[0] + ".mp3")
+    if q == "mp3":
+        j["status"] = "processing"
+        convert(j, src, os.path.splitext(name)[0] + ".mp3")
+    else:
+        j["path"], j["name"] = src, name
+        apply_wm(j, wm)
 
 
-def run_extracted(j, url, q):
+def run_extracted(j, url, q, wm=None):
     def hook(d):
         if j["cancel"].is_set():
             raise Cancelled
@@ -281,11 +315,13 @@ def run_extracted(j, url, q):
         raise ValueError("No file was produced.")
     j["path"] = max(files, key=os.path.getsize)
     j["name"] = os.path.basename(j["path"])
+    if wm and q != "mp3":
+        apply_wm(j, wm)
 
 
-def worker(j, fn, url, q):
+def worker(j, fn, url, q, wm):
     try:
-        fn(j, url, q)
+        fn(j, url, q, wm)
         j["status"] = "ready"
     except Exception as e:
         if j["cancel"].is_set():
@@ -303,6 +339,9 @@ def create_job():
         check_host(url)
     except ValueError as e:
         return jsonify(error=str(e)), 400
+    wm = b.get("wm") if isinstance(b.get("wm"), dict) and q != "mp3" else None
+    if wm and (not FFMPEG or not clean_wm_text(wm)):
+        return jsonify(error="Enter a watermark name (watermarks need FFmpeg on the server)."), 400
     if q == "mp3" and not FFMPEG:
         return jsonify(error="MP3 conversion is not available on this server."), 400
     if kind == "extracted" and not yt_dlp:
@@ -312,7 +351,7 @@ def create_job():
     j = {"id": uuid.uuid4().hex, "status": "queued", "pct": 0, "error": None, "path": None, "name": None,
          "cancel": threading.Event(), "t": time.time(), "dir": tempfile.mkdtemp(prefix="vdp_")}
     JOBS[j["id"]] = j
-    threading.Thread(target=worker, args=(j, run_extracted if kind == "extracted" else run_direct_audio, url, q),
+    threading.Thread(target=worker, args=(j, run_extracted if kind == "extracted" else run_direct, url, q, wm),
                      daemon=True).start()
     return jsonify(id=j["id"])
 

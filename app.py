@@ -1,9 +1,12 @@
 """V-Downloader Pro - backend. Run: python app.py  (or gunicorn app:app)"""
-import ipaddress, os, shutil, socket, subprocess, tempfile, threading, time, uuid
+import hashlib, hmac, ipaddress, os, shutil, socket, subprocess, tempfile, threading, time, uuid
 from urllib.parse import urljoin, urlparse, unquote, quote
 
 import requests
-from flask import Flask, Response, jsonify, request, send_file, send_from_directory, stream_with_context
+from datetime import timedelta
+
+from flask import Flask, Response, jsonify, redirect, request, send_file, send_from_directory, session, stream_with_context
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 try:
     import yt_dlp
@@ -23,6 +26,64 @@ FONT = next((p for p in ("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
 POS = {"tl": "x=24:y=24", "tr": "x=w-tw-24:y=24", "bl": "x=24:y=h-th-24", "br": "x=w-tw-24:y=h-th-24"}
 
 app = Flask(__name__, static_folder="static")
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1)  # real visitor IP behind Render's proxy
+
+# ---------- optional password protection (set APP_PASSWORD on the server) ----------
+PASSWORD = os.environ.get("APP_PASSWORD", "")
+app.secret_key = os.environ.get("SECRET_KEY") or hashlib.sha256(("vdp-" + PASSWORD).encode()).hexdigest()
+app.permanent_session_lifetime = timedelta(days=30)
+app.config.update(SESSION_COOKIE_SAMESITE="Lax", SESSION_COOKIE_SECURE=bool(os.environ.get("RENDER")))
+FAILS = {}
+LOGIN_PAGE = """<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>V-Downloader Pro - Login</title>
+<style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#060a16;color:#e8eefc;font-family:"Segoe UI",system-ui,sans-serif}
+form{width:min(92vw,380px);background:#0d1426;border:1px solid #1f2b4a;border-radius:22px;padding:28px}
+h1{margin:0 0 6px;font-size:1.5rem}p{margin:0 0 18px;color:#8b9bc2}
+input{width:100%;box-sizing:border-box;padding:14px;border-radius:12px;border:2px solid #1f2b4a;background:#121b33;color:#e8eefc;font:inherit;font-size:1rem}
+input:focus{outline:none;border-color:#3b82f6}
+button{width:100%;margin-top:14px;padding:14px;border:0;border-radius:12px;background:linear-gradient(135deg,#1d4ed8,#3b82f6 55%,#38bdf8);color:#fff;font:inherit;font-weight:700;font-size:1rem;cursor:pointer}
+.e{color:#f87171;min-height:22px;margin-top:10px}</style></head><body>
+<form method="post"><h1>V-Downloader Pro</h1><p>Enter the password to continue.</p>
+<input type="password" name="password" placeholder="Password" autofocus autocomplete="current-password">
+<button type="submit">Log in</button><div class="e">__ERR__</div></form></body></html>"""
+
+
+@app.before_request
+def require_login():
+    p = request.path
+    if (not PASSWORD or p in ("/login", "/manifest.json", "/icon.svg")
+            or (p.startswith("/google") and p.endswith(".html")) or session.get("ok")):
+        return None
+    if p.startswith("/api/"):
+        return jsonify(error="Please log in first."), 401
+    return redirect("/login")
+
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if not PASSWORD:
+        return redirect("/")
+    err = ""
+    if request.method == "POST":
+        ip, now = request.remote_addr, time.time()
+        FAILS[ip] = [t for t in FAILS.get(ip, []) if now - t < 900]
+        if len(FAILS[ip]) >= 8:
+            err = "Too many attempts. Try again in 15 minutes."
+        elif hmac.compare_digest(request.form.get("password", "").encode(), PASSWORD.encode()):
+            session.permanent = True
+            session["ok"] = True
+            return redirect("/")
+        else:
+            FAILS[ip].append(now)
+            err = "Wrong password."
+    return Response(LOGIN_PAGE.replace("__ERR__", err), mimetype="text/html")
+
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect("/login")
+
 
 
 class Cancelled(Exception):

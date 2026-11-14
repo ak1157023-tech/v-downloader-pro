@@ -150,7 +150,7 @@ BASE = os.path.dirname(os.path.abspath(__file__))
 @app.get("/")
 def home():
     # index.html can sit next to app.py or inside a static/ folder
-    folder = os.path.join(BASE, "static") if os.path.exists(os.path.join(BASE, "static", "index.html")) else BASE
+    folder = BASE if os.path.exists(os.path.join(BASE, "index.html")) else os.path.join(BASE, "static")
     return send_from_directory(folder, "index.html")
 
 

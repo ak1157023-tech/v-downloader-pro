@@ -80,9 +80,44 @@ def rate_limit():
             return jsonify(error="Too many requests. Please wait a minute."), 429
 
 
+BASE = os.path.dirname(os.path.abspath(__file__))
+
+
 @app.get("/")
 def home():
-    return send_from_directory("static", "index.html")
+    # index.html can sit next to app.py or inside a static/ folder
+    folder = os.path.join(BASE, "static") if os.path.exists(os.path.join(BASE, "static", "index.html")) else BASE
+    return send_from_directory(folder, "index.html")
+
+
+@app.get("/<name>.html")
+def google_verify(name):
+    # serves Google Search Console verification files (googleXXXX.html) placed next to app.py
+    path = os.path.join(BASE, name + ".html")
+    if name.startswith("google") and os.path.isfile(path):
+        return send_from_directory(BASE, name + ".html")
+    return jsonify(error="Not found."), 404
+
+
+# ---------- installable web app (PWA) ----------
+@app.get("/manifest.json")
+def manifest():
+    return jsonify(
+        name="V-Downloader Pro", short_name="V-Downloader", start_url="/", scope="/",
+        display="standalone", background_color="#060a16", theme_color="#060a16",
+        icons=[{"src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any"}],
+    )
+
+
+@app.get("/icon.svg")
+def icon():
+    svg = ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">'
+           '<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">'
+           '<stop offset="0" stop-color="#1d4ed8"/><stop offset="1" stop-color="#38bdf8"/></linearGradient></defs>'
+           '<rect width="512" height="512" rx="110" fill="url(#g)"/>'
+           '<path d="M256 110v190m0 0l-80-80m80 80l80-80M140 380h232" stroke="#fff" stroke-width="40" '
+           'stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>')
+    return Response(svg, mimetype="image/svg+xml")
 
 
 # ---------- info ----------

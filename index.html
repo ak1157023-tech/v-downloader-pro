@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>V-Downloader Pro</title>
+<meta name="theme-color" content="#060a16">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%232563eb'/%3E%3Cpath d='M32 14v26m0 0l-10-10m10 10l10-10M18 50h28' stroke='%23fff' stroke-width='5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<style>
+:root{--bg:#060a16;--panel:#0d1426;--panel2:#121b33;--line:#1f2b4a;--ink:#e8eefc;--mut:#8b9bc2;
+--g:linear-gradient(135deg,#1d4ed8,#3b82f6 55%,#38bdf8);--ok:#34d399;--err:#f87171}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;color:var(--ink);font-family:"Segoe UI",system-ui,-apple-system,sans-serif;
+background:radial-gradient(900px 500px at 15% -10%,#14275a55,transparent),radial-gradient(700px 400px at 100% 0,#0b3a6b44,transparent),var(--bg)}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:14px 20px;border-bottom:1px solid var(--line);background:#060a16cc;backdrop-filter:blur(10px);position:sticky;top:0;z-index:5}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:1.15rem}
+.logo{width:36px;height:36px;border-radius:10px;background:var(--g);display:grid;place-items:center;box-shadow:0 6px 20px #2563eb55}
+nav{display:flex;gap:6px}
+nav button{background:none;border:0;color:var(--mut);padding:9px 16px;border-radius:999px;font:inherit;font-weight:600;cursor:pointer;transition:.2s}
+nav button:hover{color:var(--ink);background:var(--panel2)}
+nav button.on{color:#fff;background:var(--g)}
+main{max-width:860px;margin:0 auto;padding:44px 18px 70px}
+h1{font-size:clamp(1.9rem,5vw,3rem);line-height:1.1;margin:0 0 12px;text-align:center;letter-spacing:-.02em}
+h1 span{background:var(--g);-webkit-background-clip:text;background-clip:text;color:transparent}
+.sub{text-align:center;color:var(--mut);margin:0 auto 28px;max-width:560px}
+.search{display:flex;gap:8px;background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:8px;transition:.2s}
+.search:focus-within{border-color:#3b82f6;box-shadow:0 0 0 4px #3b82f622}
+.search input{flex:1;min-width:0;background:none;border:0;color:var(--ink);font:inherit;font-size:1.05rem;padding:12px 10px;outline:none}
+.btn{border:0;border-radius:12px;font:inherit;font-weight:700;cursor:pointer;color:#fff;padding:12px 20px;transition:.2s}
+.btn.ghost{background:var(--panel2);color:var(--ink)}
+.btn.ghost:hover{background:#1a2647}
+.btn.pri{background:var(--g)}
+.btn.pri:hover{transform:translateY(-1px);box-shadow:0 8px 24px #2563eb55}
+.btn:disabled{opacity:.55;cursor:not-allowed;transform:none;box-shadow:none}
+button:focus-visible{outline:3px solid #7dd3fc;outline-offset:2px}
+#msg{min-height:26px;margin:14px 4px;color:var(--mut);text-align:center}
+#msg.err{color:var(--err)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:22px;overflow:hidden;animation:in .35s ease}
+@keyframes in{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.top{display:flex;gap:16px;padding:18px;flex-wrap:wrap}
+#thumb{width:240px;max-width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:14px;background:var(--panel2)}
+.meta{flex:1;min-width:200px}
+#title{font-size:1.2rem;font-weight:700;margin:0 0 10px;overflow-wrap:anywhere}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:5px 12px;font-size:.85rem;color:var(--mut)}
+.sec{padding:0 18px 18px}
+.sec h3{margin:6px 0 12px;font-size:1rem;color:var(--mut);font-weight:600}
+.qs{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
+.q{background:var(--panel2);border:2px solid var(--line);color:var(--ink);border-radius:14px;padding:14px 10px;font:inherit;cursor:pointer;transition:.2s;text-align:center}
+.q b{display:block;font-size:1.05rem}.q small{color:var(--mut)}
+.q:hover{border-color:#3b82f6}
+.q.on{border-color:#38bdf8;background:#13306a}
+.go{width:100%;padding:18px;font-size:1.15rem;border-radius:16px;letter-spacing:.04em}
+#prog{margin-top:16px}
+.row{display:flex;justify-content:space-between;gap:10px;font-size:.9rem;color:var(--mut);margin-bottom:8px;flex-wrap:wrap}
+.bar{height:12px;border-radius:99px;background:var(--panel2);overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--g);transition:width .25s}
+.bar.ind i{width:35%;animation:ind 1.1s ease-in-out infinite}
+@keyframes ind{0%{margin-left:-35%}100%{margin-left:100%}}
+.hist{display:grid;gap:10px}
+.item{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px 16px}
+.item b{overflow-wrap:anywhere}.item small{color:var(--mut);display:block;margin-top:4px}
+.badge{padding:4px 12px;border-radius:99px;font-size:.8rem;font-weight:700;border:1px solid}
+.badge.Completed{color:var(--ok);border-color:#34d39955}.badge.Failed{color:var(--err);border-color:#f8717155}.badge.Cancelled{color:var(--mut);border-color:var(--line)}
+.head{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}.head h2{margin:0}
+.about p{color:var(--mut);line-height:1.7}
+[hidden]{display:none!important}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><div class="logo"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11m0 0l-4-4m4 4l4-4M5 20h14"/></svg></div>V-Downloader Pro</div>
+  <nav><button data-v="home" class="on">Home</button><button data-v="history">Download History</button><button data-v="about">About</button></nav>
+</header>
+<main>
+<section id="home">
+  <h1>Download Your Favorite <span>Videos Easily</span></h1>
+  <p class="sub">Paste a video link, choose your preferred format and quality, and download.</p>
+  <div class="search">
+    <input id="url" type="text" inputmode="url" placeholder="Paste a video link here" autocomplete="off" aria-label="Video link">
+    <button class="btn ghost" id="paste">Paste Link</button>
+    <button class="btn pri" id="search">Search</button>
+  </div>
+  <div id="msg" role="status"></div>
+  <div class="card" id="card" hidden>
+    <div class="top">
+      <img id="thumb" alt="" referrerpolicy="no-referrer" hidden>
+      <div class="meta"><p id="title"></p><div class="chips" id="chips"></div></div>
+    </div>
+    <div class="sec"><h3>Choose quality</h3><div class="qs" id="qs"></div></div>
+    <div class="sec">
+      <button class="btn pri go" id="dl">DOWNLOAD NOW</button>
+      <div id="prog" hidden>
+        <div class="row"><span id="phase"></span><span id="pct"></span></div>
+        <div class="bar" id="bar"><i></i></div>
+        <div class="row" style="margin:8px 0 0"><span id="size"></span><button class="btn ghost" id="cancel" style="padding:6px 14px">Cancel</button></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="history" hidden>
+  <div class="head"><h2>Download History</h2><button class="btn ghost" id="clear">Clear history</button></div>
+  <div class="hist" id="hist"></div>
+</section>
+
+<section id="about" class="about" hidden>
+  <h2>About V-Downloader Pro</h2>
+  <p>V-Downloader Pro downloads videos from direct media links and from sources supported by the server. Only the qualities that really exist for your link are shown, and MP3 is offered only when the server can convert audio.</p>
+  <p>Your download history is stored only in this browser. Please download only content you own or have permission to save.</p>
+</section>
+</main>
+
+<script>
+const $=s=>document.querySelector(s), J={"Content-Type":"application/json"}, BIG=400*1024*1024;
+const S={info:null,url:"",q:null,ctrl:null,job:null,busy:false};
+const fmt=b=>{if(!b)return"";const u=["B","KB","MB","GB"];let i=0;while(b>=1024&&i<3){b/=1024;i++}return b.toFixed(i?1:0)+" "+u[i]};
+const say=(t,e)=>{$("#msg").textContent=t||"";$("#msg").className=e?"err":""};
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+async function api(p,o){const r=await fetch(p,o);if(!r.ok){let m="Request failed.";try{m=(await r.json()).error||m}catch{}throw new Error(m)}return r}
+
+/* navigation */
+function route(){const v=["history","about"].includes(location.hash.slice(1))?location.hash.slice(1):"home";
+ ["home","history","about"].forEach(x=>$("#"+x).hidden=x!==v);
+ document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("on",b.dataset.v===v));
+ if(v==="history")renderHist()}
+document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>{location.hash=b.dataset.v==="home"?"":b.dataset.v});
+addEventListener("hashchange",route);
+
+/* search */
+async function search(){
+ const url=$("#url").value.trim();if(!url)return say("Paste a video link first.",1);
+ $("#card").hidden=true;$("#search").disabled=true;say("Checking link…");
+ try{S.info=await(await api("/api/info",{method:"POST",headers:J,body:JSON.stringify({url})})).json();S.url=url;show();say("")}
+ catch(e){say(e.message,1)}
+ $("#search").disabled=false}
+function show(){const i=S.info;
+ $("#thumb").hidden=!i.thumbnail;if(i.thumbnail)$("#thumb").src=i.thumbnail;
+ $("#title").textContent=i.title;
+ $("#chips").replaceChildren(...[i.format&&i.format.toUpperCase(),i.size&&fmt(i.size),i.duration&&("Duration "+i.duration)].filter(Boolean).map(t=>{const c=document.createElement("span");c.className="chip";c.textContent=t;return c}));
+ const list=i.qualities.slice();if(i.audio)list.push({id:"mp3",label:"MP3 Audio",sub:"Audio only"});
+ $("#qs").replaceChildren(...list.map(q=>{const b=document.createElement("button");b.className="q";
+  b.innerHTML="<b></b><small></small>";b.firstChild.textContent=q.label;b.lastChild.textContent=q.sub||fmt(q.size)||"Available";
+  b.onclick=()=>{S.q=q;document.querySelectorAll(".q").forEach(x=>x.classList.toggle("on",x===b))};return b}));
+ document.querySelector(".q").click();$("#prog").hidden=true;$("#card").hidden=false}
+
+/* download */
+function phase(label,pct,got,total){$("#phase").textContent=label;const bar=$("#bar");
+ bar.classList.toggle("ind",pct==null);bar.firstElementChild.style.width=pct==null?"":pct+"%";
+ $("#pct").textContent=pct==null?"":Math.round(pct)+"%";
+ $("#size").textContent=got!=null?fmt(got)+(total?" of "+fmt(total):""):""}
+function fname(res){const cd=res.headers.get("Content-Disposition")||"";
+ let m=cd.match(/filename\*=UTF-8''([^;]+)/i);if(m)return decodeURIComponent(m[1]);
+ m=cd.match(/filename="?([^";]+)"?/i);return m?m[1]:"video"}
+function save(href,name){const a=document.createElement("a");a.href=href;a.download=name;document.body.appendChild(a);a.click();a.remove()}
+async function download(){
+ if(S.busy||!S.q)return;S.busy=true;S.ctrl=new AbortController();S.job=null;
+ $("#dl").disabled=true;$("#prog").hidden=false;say("");phase("Starting…",null);
+ let status="Failed",name=S.info.title;const sig={signal:S.ctrl.signal};
+ try{
+  let file;
+  if(S.q.id==="original"&&S.info.kind==="direct")file="/api/direct?url="+encodeURIComponent(S.url);
+  else{
+   phase("Preparing on server",0);
+   S.job=(await(await api("/api/jobs",{method:"POST",headers:J,body:JSON.stringify({url:S.url,quality:S.q.id,kind:S.info.kind}),...sig})).json()).id;
+   for(;;){await sleep(800);
+    const j=await(await api("/api/jobs/"+S.job,sig)).json();
+    if(j.status==="error")throw new Error(j.error||"Preparation failed.");
+    if(j.status==="cancelled")throw new DOMException("","AbortError");
+    if(j.status==="ready")break;
+    phase(j.status==="processing"?"Converting":"Preparing on server",j.status==="processing"?null:j.pct)}
+   file=`/api/jobs/${S.job}/file`}
+  phase("Downloading",0);
+  const res=await api(file,sig),total=+res.headers.get("Content-Length")||0;name=fname(res);
+  if(total>BIG){S.ctrl.abort();save(file,name);phase("Handed to your browser's download manager",100);status="Completed";say("Large file: your browser is downloading it now.")}
+  else{
+   const rd=res.body.getReader(),parts=[];let got=0;
+   for(;;){const{done,value}=await rd.read();if(done)break;parts.push(value);got+=value.length;phase("Downloading",total?got/total*100:null,got,total)}
+   const url=URL.createObjectURL(new Blob(parts,{type:res.headers.get("Content-Type")||"application/octet-stream"}));
+   save(url,name);setTimeout(()=>URL.revokeObjectURL(url),60000);
+   phase("Completed",100,got,got);status="Completed";say("Download complete. Check your Downloads folder.")}
+ }catch(e){
+  if(e.name==="AbortError"&&status!=="Completed"){status="Cancelled";phase("Cancelled",null);say("Download cancelled.")}
+  else if(status!=="Completed"){say(e.message||"Download failed.",1);phase("Failed",null)}
+ }
+ addHist({name,format:(name.split(".").pop()||"").toUpperCase(),quality:S.q.label,date:new Date().toISOString(),status});
+ S.busy=false;$("#dl").disabled=false}
+$("#cancel").onclick=()=>{if(!S.busy)return;S.ctrl&&S.ctrl.abort();if(S.job)fetch("/api/jobs/"+S.job,{method:"DELETE"})};
+
+/* history (stored in this browser only) */
+const getH=()=>{try{return JSON.parse(localStorage.getItem("vdp_hist")||"[]")}catch{return[]}};
+function addHist(e){try{localStorage.setItem("vdp_hist",JSON.stringify([e,...getH()].slice(0,100)))}catch{}}
+function renderHist(){const h=getH(),box=$("#hist");
+ if(!h.length){box.innerHTML='<p style="color:var(--mut)">No downloads yet.</p>';return}
+ box.replaceChildren(...h.map(e=>{const d=document.createElement("div");d.className="item";
+  d.innerHTML="<div><b></b><small></small></div><span class='badge'></span>";
+  d.querySelector("b").textContent=e.name;
+  d.querySelector("small").textContent=[e.format,e.quality,new Date(e.date).toLocaleString()].filter(Boolean).join("  |  ");
+  const b=d.querySelector(".badge");b.textContent=e.status;b.classList.add(e.status);return d}))}
+$("#clear").onclick=()=>{try{localStorage.removeItem("vdp_hist")}catch{}renderHist()};
+
+$("#search").onclick=search;$("#dl").onclick=download;
+$("#url").addEventListener("keydown",e=>{if(e.key==="Enter")search()});
+$("#paste").onclick=async()=>{try{$("#url").value=(await navigator.clipboard.readText()).trim();search()}catch{say("Clipboard access was blocked. Paste the link manually.",1)}};
+route();
+</script>
+</body>
+</html>

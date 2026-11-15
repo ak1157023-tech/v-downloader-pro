@@ -1,19 +1,19 @@
 """V-Downloader Pro - backend. Run: python app.py  (or gunicorn app:app)"""
-import hashlib, hmac, ipaddress, os, shutil, socket, subprocess, tempfile, threading, time, uuid
+import ipaddress, os, re, shutil, socket, subprocess, tempfile, threading, time, uuid, zipfile
 from urllib.parse import urljoin, urlparse, unquote, quote
 
 import requests
-from datetime import timedelta
-
-from flask import Flask, Response, jsonify, redirect, request, send_file, send_from_directory, session, stream_with_context
-from werkzeug.middleware.proxy_fix import ProxyFix
+from flask import Flask, Response, jsonify, request, send_file, send_from_directory, stream_with_context
 
 try:
     import yt_dlp
 except ImportError:
     yt_dlp = None
 
-MAX_BYTES = int(os.environ.get("MAX_MB", "2000")) * 1024 * 1024
+MAX_MB = int(os.environ.get("MAX_MB", "2048"))
+MAX_BYTES = MAX_MB * 1024 * 1024
+LIMIT_TXT = f"{MAX_MB / 1024:g} GB"
+MAX_SOURCES = int(os.environ.get("MAX_SOURCES", "4"))
 MAX_JOBS = int(os.environ.get("MAX_JOBS", "3"))
 FFMPEG = shutil.which("ffmpeg")
 TIERS = {"480": 480, "720": 720, "1080": 1080, "2k": 1440, "4k": 2160}
@@ -21,69 +21,9 @@ LABELS = {"480": "480p", "720": "720p", "1080": "1080p", "2k": "2K", "4k": "4K"}
 EXT = {".mp4", ".webm", ".mkv", ".mov", ".m4v", ".avi", ".mp3", ".m4a", ".ogg", ".wav", ".flac"}
 UA = {"User-Agent": "Mozilla/5.0 V-Downloader-Pro"}
 JOBS, HITS = {}, {}
-FONT = next((p for p in ("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
-                         "/usr/share/fonts/dejavu/DejaVuSans-Bold.ttf") if os.path.exists(p)), None)
-POS = {"tl": "x=24:y=24", "tr": "x=w-tw-24:y=24", "bl": "x=24:y=h-th-24", "br": "x=w-tw-24:y=h-th-24"}
 
 app = Flask(__name__, static_folder="static")
-app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1)  # real visitor IP behind Render's proxy
-
-# ---------- optional password protection (set APP_PASSWORD on the server) ----------
-PASSWORD = os.environ.get("APP_PASSWORD", "")
-app.secret_key = os.environ.get("SECRET_KEY") or hashlib.sha256(("vdp-" + PASSWORD).encode()).hexdigest()
-app.permanent_session_lifetime = timedelta(days=30)
-app.config.update(SESSION_COOKIE_SAMESITE="Lax", SESSION_COOKIE_SECURE=bool(os.environ.get("RENDER")))
-FAILS = {}
-LOGIN_PAGE = """<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1"><title>V-Downloader Pro - Login</title>
-<style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#060a16;color:#e8eefc;font-family:"Segoe UI",system-ui,sans-serif}
-form{width:min(92vw,380px);background:#0d1426;border:1px solid #1f2b4a;border-radius:22px;padding:28px}
-h1{margin:0 0 6px;font-size:1.5rem}p{margin:0 0 18px;color:#8b9bc2}
-input{width:100%;box-sizing:border-box;padding:14px;border-radius:12px;border:2px solid #1f2b4a;background:#121b33;color:#e8eefc;font:inherit;font-size:1rem}
-input:focus{outline:none;border-color:#3b82f6}
-button{width:100%;margin-top:14px;padding:14px;border:0;border-radius:12px;background:linear-gradient(135deg,#1d4ed8,#3b82f6 55%,#38bdf8);color:#fff;font:inherit;font-weight:700;font-size:1rem;cursor:pointer}
-.e{color:#f87171;min-height:22px;margin-top:10px}</style></head><body>
-<form method="post"><h1>V-Downloader Pro</h1><p>Enter the password to continue.</p>
-<input type="password" name="password" placeholder="Password" autofocus autocomplete="current-password">
-<button type="submit">Log in</button><div class="e">__ERR__</div></form></body></html>"""
-
-
-@app.before_request
-def require_login():
-    p = request.path
-    if (not PASSWORD or p in ("/login", "/manifest.json", "/icon.svg")
-            or (p.startswith("/google") and p.endswith(".html")) or session.get("ok")):
-        return None
-    if p.startswith("/api/"):
-        return jsonify(error="Please log in first."), 401
-    return redirect("/login")
-
-
-@app.route("/login", methods=["GET", "POST"])
-def login():
-    if not PASSWORD:
-        return redirect("/")
-    err = ""
-    if request.method == "POST":
-        ip, now = request.remote_addr, time.time()
-        FAILS[ip] = [t for t in FAILS.get(ip, []) if now - t < 900]
-        if len(FAILS[ip]) >= 8:
-            err = "Too many attempts. Try again in 15 minutes."
-        elif hmac.compare_digest(request.form.get("password", "").encode(), PASSWORD.encode()):
-            session.permanent = True
-            session["ok"] = True
-            return redirect("/")
-        else:
-            FAILS[ip].append(now)
-            err = "Wrong password."
-    return Response(LOGIN_PAGE.replace("__ERR__", err), mimetype="text/html")
-
-
-@app.route("/logout")
-def logout():
-    session.clear()
-    return redirect("/login")
-
+app.config["MAX_CONTENT_LENGTH"] = MAX_BYTES + (8 << 20)  # file + multipart overhead
 
 
 class Cancelled(Exception):
@@ -144,44 +84,9 @@ def rate_limit():
             return jsonify(error="Too many requests. Please wait a minute."), 429
 
 
-BASE = os.path.dirname(os.path.abspath(__file__))
-
-
 @app.get("/")
 def home():
-    # index.html can sit next to app.py or inside a static/ folder
-    folder = BASE if os.path.exists(os.path.join(BASE, "index.html")) else os.path.join(BASE, "static")
-    return send_from_directory(folder, "index.html")
-
-
-@app.get("/<name>.html")
-def google_verify(name):
-    # serves Google Search Console verification files (googleXXXX.html) placed next to app.py
-    path = os.path.join(BASE, name + ".html")
-    if name.startswith("google") and os.path.isfile(path):
-        return send_from_directory(BASE, name + ".html")
-    return jsonify(error="Not found."), 404
-
-
-# ---------- installable web app (PWA) ----------
-@app.get("/manifest.json")
-def manifest():
-    return jsonify(
-        name="V-Downloader Pro", short_name="V-Downloader", start_url="/", scope="/",
-        display="standalone", background_color="#060a16", theme_color="#060a16",
-        icons=[{"src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any"}],
-    )
-
-
-@app.get("/icon.svg")
-def icon():
-    svg = ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">'
-           '<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">'
-           '<stop offset="0" stop-color="#1d4ed8"/><stop offset="1" stop-color="#38bdf8"/></linearGradient></defs>'
-           '<rect width="512" height="512" rx="110" fill="url(#g)"/>'
-           '<path d="M256 110v190m0 0l-80-80m80 80l80-80M140 380h232" stroke="#fff" stroke-width="40" '
-           'stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>')
-    return Response(svg, mimetype="image/svg+xml")
+    return send_from_directory("static", "index.html")
 
 
 # ---------- info ----------
@@ -217,11 +122,11 @@ def info():
         name = filename(r, final)
         r.close()
         if size and size > MAX_BYTES:
-            return jsonify(error="That file is larger than this server allows."), 400
+            return jsonify(error=f"Failed: file is larger than the {LIMIT_TXT} limit."), 400
         return jsonify(kind="direct", title=name, size=size, duration=None, thumbnail=None,
                        format=os.path.splitext(name)[1].lstrip(".") or ct.split("/")[-1],
                        qualities=[{"id": "original", "label": "Original quality", "sub": "Source file as is"}],
-                       audio=bool(FFMPEG), watermark=bool(FFMPEG))
+                       audio=bool(FFMPEG))
     r.close()
     if not yt_dlp:
         return jsonify(error="This is not a direct video file link."), 400
@@ -239,7 +144,7 @@ def info():
         quals = [{"id": "best", "label": "Best available", "sub": f"{best}p" if best else "Audio only"}]
     return jsonify(kind="extracted", title=d.get("title") or "Untitled", thumbnail=d.get("thumbnail"),
                    duration=d.get("duration_string"), format=d.get("ext"),
-                   size=quals[-1].get("size"), qualities=quals, audio=bool(FFMPEG), watermark=bool(FFMPEG))
+                   size=quals[-1].get("size"), qualities=quals, audio=bool(FFMPEG))
 
 
 # ---------- direct streaming (original file, no server storage) ----------
@@ -282,35 +187,8 @@ def convert(j, src, outname):
     j["path"], j["name"] = out, outname
 
 
-def clean_wm_text(wm):
-    return "".join(c for c in str((wm or {}).get("text") or "") if c.isprintable())[:40].strip()
-
-
-def apply_wm(j, wm):
-    text = clean_wm_text(wm)
-    if not text:
-        raise ValueError("Enter the watermark name.")
-    j["status"], j["pct"] = "processing", 100
-    tf, out = os.path.join(j["dir"], "wm.txt"), os.path.join(j["dir"], "wm_out.mp4")
-    with open(tf, "w", encoding="utf-8") as f:
-        f.write(text)
-    flt = "drawtext=textfile=%s:%sfontcolor=white@0.85:fontsize=h/24:box=1:boxcolor=black@0.35:boxborderw=10:%s" % (
-        tf, f"fontfile={FONT}:" if FONT else "", POS.get(wm.get("pos"), POS["br"]))
-    pr = subprocess.Popen([FFMPEG, "-y", "-i", j["path"], "-vf", flt, "-c:v", "libx264", "-preset", "veryfast",
-                           "-crf", "23", "-c:a", "aac", "-b:a", "160k", "-movflags", "+faststart", out],
-                          stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    while pr.poll() is None:
-        if j["cancel"].is_set():
-            pr.kill()
-            raise Cancelled
-        time.sleep(0.5)
-    if pr.returncode:
-        raise ValueError("Adding the watermark failed.")
-    j["path"], j["name"] = out, os.path.splitext(j["name"])[0] + "_watermarked.mp4"
-
-
-def run_direct(j, url, q, wm=None):
-    if q != "mp3" and not wm:
+def run_direct_audio(j, url, q):
+    if q != "mp3":
         raise ValueError("Use the direct download for the original file.")
     r, final = open_url(url)
     ok, _ = is_media(r, final)
@@ -326,26 +204,22 @@ def run_direct(j, url, q, wm=None):
                 raise Cancelled
             got += len(c)
             if got > MAX_BYTES:
-                raise ValueError("File is larger than this server allows.")
+                raise ValueError(f"Failed: file is larger than the {LIMIT_TXT} limit.")
             f.write(c)
             j["pct"] = got * 100 / total if total else 0
     r.close()
-    if q == "mp3":
-        j["status"] = "processing"
-        convert(j, src, os.path.splitext(name)[0] + ".mp3")
-    else:
-        j["path"], j["name"] = src, name
-        apply_wm(j, wm)
+    j["status"] = "processing"
+    convert(j, src, os.path.splitext(name)[0] + ".mp3")
 
 
-def run_extracted(j, url, q, wm=None):
+def run_extracted(j, url, q):
     def hook(d):
         if j["cancel"].is_set():
             raise Cancelled
         if d["status"] == "downloading":
             t = d.get("total_bytes") or d.get("total_bytes_estimate") or 0
             if t > MAX_BYTES:
-                raise ValueError("File is larger than this server allows.")
+                raise ValueError(f"Failed: file is larger than the {LIMIT_TXT} limit.")
             if t:
                 j["pct"] = d["downloaded_bytes"] * 100 / t
         elif d["status"] == "finished":
@@ -376,20 +250,31 @@ def run_extracted(j, url, q, wm=None):
         raise ValueError("No file was produced.")
     j["path"] = max(files, key=os.path.getsize)
     j["name"] = os.path.basename(j["path"])
-    if wm and q != "mp3":
-        apply_wm(j, wm)
 
 
-def worker(j, fn, url, q, wm):
+def worker(j, fn, url, q):
     try:
-        fn(j, url, q, wm)
+        fn(j, url, q)
         j["status"] = "ready"
     except Exception as e:
+        if j.get("keep"):
+            shutil.rmtree(j["dir"], ignore_errors=True)
         if j["cancel"].is_set():
             j["status"] = "cancelled"
         else:
             j["status"] = "error"
             j["error"] = str(e)[:200] if isinstance(e, ValueError) else "This download could not be prepared."
+
+
+def start_job(fn, arg, q=None, keep=False):
+    if sum(j["status"] in ("queued", "downloading", "processing") for j in JOBS.values()) >= MAX_JOBS:
+        return None
+    j = {"id": uuid.uuid4().hex, "status": "queued", "pct": 0, "error": None, "path": None, "name": None,
+         "cancel": threading.Event(), "t": time.time(), "dir": tempfile.mkdtemp(prefix="vdp_"),
+         "keep": keep, "source": None, "files": []}
+    JOBS[j["id"]] = j
+    threading.Thread(target=worker, args=(j, fn, arg, q), daemon=True).start()
+    return j
 
 
 @app.post("/api/jobs")
@@ -400,20 +285,13 @@ def create_job():
         check_host(url)
     except ValueError as e:
         return jsonify(error=str(e)), 400
-    wm = b.get("wm") if isinstance(b.get("wm"), dict) and q != "mp3" else None
-    if wm and (not FFMPEG or not clean_wm_text(wm)):
-        return jsonify(error="Enter a watermark name (watermarks need FFmpeg on the server)."), 400
     if q == "mp3" and not FFMPEG:
         return jsonify(error="MP3 conversion is not available on this server."), 400
     if kind == "extracted" and not yt_dlp:
         return jsonify(error="Not supported."), 400
-    if sum(j["status"] in ("queued", "downloading", "processing") for j in JOBS.values()) >= MAX_JOBS:
+    j = start_job(run_extracted if kind == "extracted" else run_direct_audio, url, q)
+    if not j:
         return jsonify(error="Server is busy. Try again in a minute."), 429
-    j = {"id": uuid.uuid4().hex, "status": "queued", "pct": 0, "error": None, "path": None, "name": None,
-         "cancel": threading.Event(), "t": time.time(), "dir": tempfile.mkdtemp(prefix="vdp_")}
-    JOBS[j["id"]] = j
-    threading.Thread(target=worker, args=(j, run_extracted if kind == "extracted" else run_direct, url, q, wm),
-                     daemon=True).start()
     return jsonify(id=j["id"])
 
 
@@ -422,7 +300,8 @@ def job_status(jid):
     j = JOBS.get(jid)
     if not j:
         return jsonify(error="Job not found."), 404
-    return jsonify(status=j["status"], pct=round(j["pct"], 1), error=j["error"])
+    return jsonify(status=j["status"], pct=round(j["pct"], 1), error=j["error"], source=j["source"],
+                   files=[{"i": i, "name": f["name"], "size": f["size"]} for i, f in enumerate(j["files"])])
 
 
 @app.delete("/api/jobs/<jid>")
@@ -441,13 +320,292 @@ def job_file(jid):
     return send_file(j["path"], as_attachment=True, download_name=j["name"])
 
 
+# ---------- Clip: sources (uploaded or from a link) -> clips ----------
+SOURCES = {}
+IMG_EXT = {".jpg", ".jpeg", ".png", ".webp", ".bmp", ".gif"}
+AUDIO_EXT = {".mp3", ".m4a", ".ogg", ".wav", ".flac"}
+
+
+def clean_name(n, default="file"):
+    n = re.sub(r'[\\/:*?"<>|\x00-\x1f]', "_", os.path.basename(n or "")).strip(" .")
+    return n[:120] or default
+
+
+def hsize(b):
+    for u in ("B", "KB", "MB", "GB"):
+        if b < 1024 or u == "GB":
+            return f"{b:.1f} {u}" if u != "B" else f"{b} B"
+        b /= 1024
+
+
+def probe(path):
+    exe = shutil.which("ffprobe")
+    if not exe:
+        return None
+    try:
+        out = subprocess.run([exe, "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", path],
+                             capture_output=True, text=True, timeout=20).stdout.strip()
+        return float(out)
+    except Exception:
+        return None
+
+
+def drop_source(sid):
+    s = SOURCES.pop(sid, None)
+    if s:
+        shutil.rmtree(s["dir"], ignore_errors=True)
+
+
+def add_source(path, name, kind, folder):
+    while len(SOURCES) >= MAX_SOURCES:  # keep disk use small: forget the oldest
+        drop_source(min(SOURCES, key=lambda k: SOURCES[k]["t"]))
+    sid = uuid.uuid4().hex
+    s = {"id": sid, "path": path, "name": name, "kind": kind, "dir": folder, "t": time.time(),
+         "size": os.path.getsize(path), "duration": probe(path) if kind != "image" else None}
+    SOURCES[sid] = s
+    return {k: s[k] for k in ("id", "name", "kind", "size", "duration")}
+
+
+@app.errorhandler(413)
+def too_large(_e):
+    return jsonify(error=f"Failed: file is larger than the {LIMIT_TXT} limit."), 413
+
+
+@app.get("/api/config")
+def config():
+    return jsonify(max_bytes=MAX_BYTES, limit=LIMIT_TXT, clip=bool(FFMPEG))
+
+
+@app.post("/api/upload")
+def upload():
+    f = request.files.get("file")
+    kind = "image" if request.form.get("kind") == "image" else "video"
+    if not f or not f.filename:
+        return jsonify(error="No file received."), 400
+    name = clean_name(f.filename)
+    ext = os.path.splitext(name)[1].lower()
+    mt = (f.mimetype or "").lower()
+    ok = (ext in IMG_EXT or mt.startswith("image/")) if kind == "image" else (
+        ext in EXT or mt.startswith(("video/", "audio/")))
+    if not ok:
+        return jsonify(error="This file type is not supported."), 400
+    folder = tempfile.mkdtemp(prefix="vdp_src_")
+    path = os.path.join(folder, "src" + (ext or (".jpg" if kind == "image" else ".mp4")))
+    try:
+        f.save(path)
+        size = os.path.getsize(path)
+        if size > MAX_BYTES:
+            raise ValueError(f"Failed: file is {hsize(size)}, the limit is {LIMIT_TXT}.")
+        k = "image" if kind == "image" else ("audio" if os.path.splitext(path)[1] in AUDIO_EXT else "video")
+        return jsonify(add_source(path, name, k, folder))
+    except ValueError as e:
+        shutil.rmtree(folder, ignore_errors=True)
+        return jsonify(error=str(e)), 413
+    except Exception:
+        shutil.rmtree(folder, ignore_errors=True)
+        return jsonify(error="Upload failed."), 500
+
+
+def run_source(j, url, _q):
+    """Download a link (direct file or yt-dlp source) so it can be clipped."""
+    r, final = open_url(url)
+    ok, _ = is_media(r, final)
+    j["status"] = "downloading"
+    if ok:
+        name = clean_name(filename(r, final), "video")
+        ext = os.path.splitext(name)[1].lower() or ".mp4"
+        total = int(r.headers.get("Content-Length") or 0)
+        if total > MAX_BYTES:
+            r.close()
+            raise ValueError(f"Failed: file is {hsize(total)}, the limit is {LIMIT_TXT}.")
+        path, got = os.path.join(j["dir"], "src" + ext), 0
+        with open(path, "wb") as fh:
+            for c in r.iter_content(1 << 16):
+                if j["cancel"].is_set():
+                    raise Cancelled
+                got += len(c)
+                if got > MAX_BYTES:
+                    raise ValueError(f"Failed: file is larger than the {LIMIT_TXT} limit.")
+                fh.write(c)
+                j["pct"] = got * 100 / total if total else 0
+        r.close()
+    else:
+        r.close()
+        if not yt_dlp:
+            raise ValueError("This is not a direct video file link.")
+
+        def hook(d):
+            if j["cancel"].is_set():
+                raise Cancelled
+            if d["status"] == "downloading":
+                t = d.get("total_bytes") or d.get("total_bytes_estimate") or 0
+                if t > MAX_BYTES:
+                    raise ValueError(f"Failed: file is larger than the {LIMIT_TXT} limit.")
+                if t:
+                    j["pct"] = d["downloaded_bytes"] * 100 / t
+
+        o = {"quiet": True, "noplaylist": True, "progress_hooks": [hook], "max_filesize": MAX_BYTES,
+             "outtmpl": os.path.join(j["dir"], "%(title).80s.%(ext)s"),
+             "format": "bv*[height<=1080]+ba/b[height<=1080]/bv*+ba/b" if FFMPEG else "b[height<=1080]/b"}
+        if FFMPEG:
+            o["ffmpeg_location"], o["merge_output_format"] = FFMPEG, "mp4"
+        with yt_dlp.YoutubeDL(o) as y:
+            y.download([url])
+        files = [os.path.join(j["dir"], x) for x in os.listdir(j["dir"]) if not x.endswith((".part", ".ytdl"))]
+        if not files:
+            raise ValueError(f"Could not download this link (it may be over the {LIMIT_TXT} limit).")
+        path = max(files, key=os.path.getsize)
+        name = clean_name(os.path.basename(path))
+        if os.path.getsize(path) > MAX_BYTES:
+            raise ValueError(f"Failed: file is larger than the {LIMIT_TXT} limit.")
+    kind = "audio" if os.path.splitext(path)[1].lower() in AUDIO_EXT else "video"
+    j["source"] = add_source(path, name, kind, j["dir"])
+
+
+@app.post("/api/source/link")
+def source_link():
+    url = ((request.json or {}).get("url") or "").strip()
+    try:
+        check_host(url)
+    except ValueError as e:
+        return jsonify(error=str(e)), 400
+    j = start_job(run_source, url, keep=True)
+    if not j:
+        return jsonify(error="Server is busy. Try again in a minute."), 429
+    return jsonify(id=j["id"])
+
+
+@app.get("/api/source/<sid>/stream")
+def source_stream(sid):
+    s = SOURCES.get(sid)
+    if not s:
+        return jsonify(error="File expired. Please add it again."), 404
+    s["t"] = time.time()
+    return send_file(s["path"], conditional=True)
+
+
+def ffrun(j, cmd):
+    p = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    while p.poll() is None:
+        if j["cancel"].is_set():
+            p.kill()
+            p.wait()
+            raise Cancelled
+        time.sleep(0.3)
+    return p.returncode == 0
+
+
+def clip_cmd(s, a, b, mode, out):
+    d, src = f"{b - a:.3f}", s["path"]
+    mp4 = ["-movflags", "+faststart"] if out.endswith(".mp4") else []
+    if s["kind"] == "image":
+        return [FFMPEG, "-y", "-loop", "1", "-i", src, "-t", d, "-vf",
+                "scale=trunc(iw/2)*2:trunc(ih/2)*2,format=yuv420p", "-r", "30", "-c:v", "libx264",
+                "-preset", "veryfast"] + mp4 + [out]
+    head = [FFMPEG, "-y", "-ss", f"{a:.3f}", "-i", src, "-t", d]
+    if s["kind"] == "audio":
+        return head + ["-vn", "-c", "copy", out]
+    m = ["-map", "0:v:0?", "-map", "0:a:0?"]
+    if mode == "fast":  # no re-encoding: finishes in seconds
+        return head + m + ["-c", "copy", "-avoid_negative_ts", "make_zero"] + mp4 + [out]
+    return head + m + ["-c:v", "libx264", "-preset", "veryfast", "-crf", "22", "-c:a", "aac", "-b:a", "160k"] + mp4 + [out]
+
+
+def run_clip(j, body, _q):
+    s = SOURCES.get(body["source"])
+    if not s or not os.path.exists(s["path"]):
+        raise ValueError("The source file expired. Please add it again.")
+    sext = os.path.splitext(s["path"])[1].lower()
+    base = os.path.splitext(s["name"])[0][:60] or "clip"
+    mode, clips = body["mode"], body["clips"]
+    j["status"] = "processing"
+    for n, (a, b) in enumerate(clips, 1):
+        if s["kind"] == "audio":
+            ext = sext
+        elif s["kind"] == "video" and mode == "fast" and sext in (".mkv", ".webm"):
+            ext = sext
+        else:
+            ext = ".mp4"
+        label = "video" if s["kind"] == "image" else f"clip{n}"
+        out = os.path.join(j["dir"], f"{base}_{label}{ext}")
+        ok = ffrun(j, clip_cmd(s, a, b, mode, out))
+        if not ok and mode == "fast" and s["kind"] == "video":  # codec not copyable -> re-encode this one
+            out = os.path.splitext(out)[0] + ".mp4"
+            ok = ffrun(j, clip_cmd(s, a, b, "precise", out))
+        if not ok or not os.path.exists(out) or os.path.getsize(out) == 0:
+            raise ValueError(f"Clip {n} could not be created. Check the start and end times.")
+        j["files"].append({"name": os.path.basename(out), "path": out, "size": os.path.getsize(out)})
+        j["pct"] = n * 100 / len(clips)
+
+
+@app.post("/api/clip")
+def create_clip():
+    b = request.json or {}
+    if not FFMPEG:
+        return jsonify(error="Clip needs FFmpeg, which is not installed on this server."), 400
+    s = SOURCES.get(b.get("source"))
+    if not s:
+        return jsonify(error="The source file expired. Please add it again."), 400
+    mode = "precise" if b.get("mode") == "precise" else "fast"
+    try:
+        if s["kind"] == "image":
+            d = float(b.get("seconds") or 5)
+            if not 1 <= d <= 600:
+                raise ValueError
+            clips = [(0.0, d)]
+        else:
+            clips = []
+            for c in (b.get("clips") or [])[:20]:
+                a, e = float(c["start"]), float(c["end"])
+                if a < 0 or e <= a or e - a > 6 * 3600:
+                    raise ValueError
+                if s.get("duration") and a >= s["duration"]:
+                    return jsonify(error="Start time is after the end of the video."), 400
+                clips.append((a, e))
+            if not clips:
+                raise ValueError
+    except (ValueError, TypeError, KeyError):
+        return jsonify(error="Check your start and end times."), 400
+    j = start_job(run_clip, {"source": s["id"], "clips": clips, "mode": mode})
+    if not j:
+        return jsonify(error="Server is busy. Try again in a minute."), 429
+    return jsonify(id=j["id"])
+
+
+@app.get("/api/jobs/<jid>/files/<int:i>")
+def job_clip_file(jid, i):
+    j = JOBS.get(jid)
+    if not j or j["status"] != "ready" or not 0 <= i < len(j["files"]):
+        return jsonify(error="File is not ready."), 404
+    return send_file(j["files"][i]["path"], as_attachment=True, download_name=j["files"][i]["name"])
+
+
+@app.get("/api/jobs/<jid>/zip")
+def job_zip(jid):
+    j = JOBS.get(jid)
+    if not j or j["status"] != "ready" or not j["files"]:
+        return jsonify(error="File is not ready."), 404
+    zp = os.path.join(j["dir"], "clips.zip")
+    if not os.path.exists(zp):
+        tmp = zp + f".{uuid.uuid4().hex[:6]}.tmp"
+        with zipfile.ZipFile(tmp, "w", zipfile.ZIP_STORED, allowZip64=True) as z:  # video is already compressed
+            for f in j["files"]:
+                z.write(f["path"], f["name"])
+        os.replace(tmp, zp)
+    return send_file(zp, as_attachment=True, download_name="clips.zip")
+
+
 def janitor():
     while True:
         time.sleep(300)
         for k, j in list(JOBS.items()):
             if time.time() - j["t"] > 1800:
-                shutil.rmtree(j["dir"], ignore_errors=True)
+                if not j.get("keep"):
+                    shutil.rmtree(j["dir"], ignore_errors=True)
                 JOBS.pop(k, None)
+        for k, s in list(SOURCES.items()):
+            if time.time() - s["t"] > 7200:
+                drop_source(k)
 
 
 threading.Thread(target=janitor, daemon=True).start()

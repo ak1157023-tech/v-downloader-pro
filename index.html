@@ -92,6 +92,18 @@ select.field{width:auto}
 .res{display:grid;gap:10px;margin-top:14px}
 a.btn{text-decoration:none;display:inline-block}
 .note{color:var(--mut);font-size:.85rem;margin:8px 0 0}
+.bm{min-height:26px;margin:14px 4px;color:var(--mut);text-align:center}.bm.err{color:var(--err)}
+#ev,#xv{display:block;max-width:100%;max-height:420px;margin:0 auto;border-radius:14px;background:#000}
+#xi{display:block;max-width:100%;max-height:420px;border-radius:14px}
+.stage{position:relative;width:fit-content;max-width:100%;margin:0 auto;line-height:0}
+#ov{position:absolute;inset:0;overflow:hidden;border-radius:14px;touch-action:none}
+.tx{position:absolute;white-space:pre;line-height:1.25;padding:.25em;cursor:move;user-select:none;touch-action:none;border-radius:.2em}
+.tx.sel{outline:2px dashed #38bdf8}
+.hd{position:absolute;right:-9px;bottom:-9px;width:16px;height:16px;border-radius:50%;background:#38bdf8;cursor:nwse-resize;border:2px solid #fff}
+.pg{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.pg label{display:grid;gap:4px;font-size:.85rem;color:var(--mut)}
+.pg .field{width:100%}.pg input[type=color]{padding:2px;height:40px}.pg input[type=range]{width:100%}
+.tgl.on{background:#13306a;box-shadow:0 0 0 2px #38bdf8 inset}
 [hidden]{display:none!important}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
@@ -99,7 +111,7 @@ a.btn{text-decoration:none;display:inline-block}
 <body>
 <header>
   <div class="brand"><div class="logo"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11m0 0l-4-4m4 4l4-4M5 20h14"/></svg></div>V-Downloader Pro</div>
-  <nav><button data-v="home" class="on">Home</button><button data-v="clip">Clip</button><button data-v="history">Download History</button><button data-v="about">About</button></nav>
+  <nav><button data-v="home" class="on">Home</button><button data-v="export">Export</button><button data-v="clip">Clip</button><button data-v="text">Text</button><button data-v="history">Download History</button><button data-v="about">About</button></nav>
 </header>
 <main>
 <section id="home">
@@ -124,6 +136,36 @@ a.btn{text-decoration:none;display:inline-block}
         <div class="row" style="margin:8px 0 0"><span id="size"></span><button class="btn ghost" id="cancel" style="padding:6px 14px">Cancel</button></div>
       </div>
     </div>
+  </div>
+</section>
+
+<section id="export" hidden>
+  <h1>Edit &amp; <span>Export</span></h1>
+  <p class="sub">Add a video, cut it on the timeline, then export it or send the result to Clip. Max size: <b class="lim">2 GB</b>.</p>
+  <div data-bar="e"></div>
+  <div class="card" id="ew" hidden>
+    <div class="top" style="display:block">
+      <video id="ev" playsinline preload="metadata"></video>
+      <p id="etitle" style="font-size:1.1rem;font-weight:700;margin:12px 0 8px;overflow-wrap:anywhere"></p>
+      <div class="chips" id="echips"></div>
+    </div>
+    <div class="sec" id="tl" hidden>
+      <h3>Timeline editor</h3>
+      <div class="tb">
+        <button class="btn ghost sm" id="tPlay">Play</button>
+        <span class="tt" id="tTime">0:00 / 0:00</span>
+        <button class="btn ghost sm" id="tSplit" title="Cut the video at the playhead (S)">Split</button>
+        <button class="btn ghost sm" id="tDel" title="Ripple delete: removes the selected part and closes the gap (Delete)">Delete</button>
+        <button class="btn ghost sm" id="tUndo" title="Ctrl+Z">Undo</button>
+        <button class="btn ghost sm" id="tRedo" title="Ctrl+Y">Redo</button>
+        <button class="btn pri sm" id="tExp">Export video</button>
+        <button class="btn pri sm" id="tTr" title="Send the edited video to the Clip section">Transfer to Clip</button>
+      </div>
+      <div class="tl" id="tlv" aria-label="Video timeline"><div class="tr" id="tTrack"></div><div class="ph" id="tPh"></div></div>
+      <div class="hint" id="tMsg" role="status">Click a part to select it. Drag on the timeline to move the playhead.</div>
+      <p class="note">Split cuts at the playhead. Delete removes the selected part and the gap closes automatically. Shortcuts: Space = play/pause, S = split, Delete = remove part.</p>
+    </div>
+    <div class="sec" id="eres" hidden><h3>Your video is ready</h3><div class="res" id="efiles"></div><p class="note">Files stay on the server for about 30 minutes.</p></div>
   </div>
 </section>
 
@@ -153,21 +195,6 @@ a.btn{text-decoration:none;display:inline-block}
       <img id="pi" alt="" hidden>
       <p id="ctitle" style="font-size:1.1rem;font-weight:700;margin:12px 0 8px;overflow-wrap:anywhere"></p>
       <div class="chips" id="cchips"></div>
-    </div>
-    <div class="sec" id="tl" hidden>
-      <h3>Timeline editor</h3>
-      <div class="tb">
-        <button class="btn ghost sm" id="tPlay">Play</button>
-        <span class="tt" id="tTime">0:00 / 0:00</span>
-        <button class="btn ghost sm" id="tSplit" title="Cut the video at the playhead (S)">Split</button>
-        <button class="btn ghost sm" id="tDel" title="Ripple delete: removes the selected part and closes the gap (Delete)">Delete</button>
-        <button class="btn ghost sm" id="tUndo" title="Ctrl+Z">Undo</button>
-        <button class="btn ghost sm" id="tRedo" title="Ctrl+Y">Redo</button>
-        <button class="btn pri sm" id="tExp">Export video</button>
-      </div>
-      <div class="tl" id="tlv" aria-label="Video timeline"><div class="tr" id="tTrack"></div><div class="ph" id="tPh"></div></div>
-      <div class="hint" id="tMsg" role="status">Click a part to select it. Drag on the timeline to move the playhead.</div>
-      <p class="note">Split cuts at the playhead. Delete removes the selected part and the gap closes automatically. Shortcuts: Space = play/pause, S = split, Delete = remove part.</p>
     </div>
     <div class="sec" id="vctl">
       <h3>Pick the part you want</h3>
@@ -202,6 +229,34 @@ a.btn{text-decoration:none;display:inline-block}
   </div>
 </section>
 
+<section id="text" hidden>
+  <h1>Add <span>Text</span></h1>
+  <p class="sub">Add a video or photo, place text on it, then save or download. Max size: <b class="lim">2 GB</b>.</p>
+  <div data-bar="x"></div>
+  <div class="card" id="xw" hidden>
+    <div class="top" style="display:block">
+      <div class="stage"><video id="xv" controls playsinline preload="metadata"></video><img id="xi" alt="" hidden><div id="ov"></div></div>
+      <p id="xtitle" style="font-size:1.1rem;font-weight:700;margin:12px 0 0;overflow-wrap:anywhere"></p>
+      <p class="note">Drag a text to move it. Drag the blue dot to resize. Double-click a text to edit it.</p>
+    </div>
+    <div class="sec">
+      <div class="tb"><button class="btn pri sm" id="xAdd">+ Add text</button><button class="btn ghost sm" id="xDel">Delete text</button></div>
+      <div class="tb" id="xchips"></div>
+      <div class="fr" id="xlenr" hidden><label for="xlen">Photo length (seconds)</label><input class="field" id="xlen" type="number" min="1" max="600" value="5"></div>
+    </div>
+    <div class="sec" id="xprops" hidden>
+      <h3>Text style</h3>
+      <div class="pg" id="pg"></div>
+      <div class="tb" style="margin-top:12px"><button class="btn ghost sm tgl" id="xB"><b>B</b> Bold</button><button class="btn ghost sm tgl" id="xI"><i>I</i> Italic</button></div>
+    </div>
+    <div class="sec">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><button class="btn pri go" id="xSave">SAVE</button><button class="btn ghost go" id="xDl">DOWNLOAD</button></div>
+      <p class="note">Save sends the video back to Clip (if it came from there). Download saves the video with text to your device.</p>
+      <div id="xres" hidden><h3 style="margin:18px 0 0;color:var(--mut)">Your video is ready</h3><div class="res" id="xfiles"></div></div>
+    </div>
+  </div>
+</section>
+
 <section id="history" hidden>
   <div class="head"><h2>Download History</h2><button class="btn ghost" id="clear">Clear history</button></div>
   <div class="hist" id="hist"></div>
@@ -223,8 +278,8 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 async function api(p,o){const r=await fetch(p,o);if(!r.ok){let m="Request failed.";try{m=(await r.json()).error||m}catch{}throw new Error(m)}return r}
 
 /* navigation */
-function route(){const v=["clip","history","about"].includes(location.hash.slice(1))?location.hash.slice(1):"home";
- ["home","clip","history","about"].forEach(x=>$("#"+x).hidden=x!==v);
+function route(){const v=["export","clip","text","history","about"].includes(location.hash.slice(1))?location.hash.slice(1):"home";
+ ["home","export","clip","text","history","about"].forEach(x=>$("#"+x).hidden=x!==v);
  document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("on",b.dataset.v===v));
  if(v==="history")renderHist()}
 document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>{location.hash=b.dataset.v==="home"?"":b.dataset.v});
@@ -340,7 +395,7 @@ function setSource(s,preview){
  $("#ctitle").textContent=s.name;
  $("#cchips").replaceChildren(...[s.kind.toUpperCase(),s.size&&fmt(s.size),s.duration&&("Duration "+T(s.duration))].filter(Boolean).map(t=>{const c=document.createElement("span");c.className="chip";c.textContent=t;return c}));
  $("#cs").value="0:00";$("#ce").value=s.duration?T(s.duration):"";
- renderClips();$("#cw").hidden=false;$("#cgo").disabled=!s.id;tlInit(s)}
+ renderClips();$("#cw").hidden=false;$("#cgo").disabled=!s.id}
 $("#pv").onloadedmetadata=()=>{if(!$("#ce").value&&isFinite($("#pv").duration))$("#ce").value=T($("#pv").duration)};
 $("#pv").onerror=()=>csay("Your browser can't preview this format, but you can still type start/end times and create clips.");
 $("#setS").onclick=()=>$("#cs").value=T($("#pv").currentTime);
@@ -348,10 +403,12 @@ $("#setE").onclick=()=>$("#ce").value=T($("#pv").currentTime);
 
 function renderClips(){const box=$("#clist");
  box.replaceChildren(...C.clips.map((c,i)=>{const d=document.createElement("div");d.className="item";
-  d.innerHTML="<div><b></b><small></small></div><button class='btn ghost sm'>Remove</button>";
+  d.innerHTML="<div><b></b><small></small></div><div class='tb' style='margin:0'><a class='btn pri sm' hidden>Download</a><button class='btn ghost sm tb1'>Text</button><button class='btn ghost sm rm'>Remove</button></div>";
   d.querySelector("b").textContent="Clip "+(i+1)+":  "+T(c.start)+"  →  "+T(c.end);
-  d.querySelector("small").textContent="Length "+T(c.end-c.start);
-  d.querySelector("button").onclick=()=>{C.clips.splice(i,1);renderClips()};return d}))}
+  d.querySelector("small").textContent="Length "+T(c.end-c.start)+(c.src?"  |  Text added":"");
+  const a=d.querySelector("a");if(c.src){a.hidden=false;a.href="/api/source/"+c.src.id+"/stream?dl=1";a.download=c.src.name}
+  d.querySelector(".tb1").onclick=()=>clipToText(c);
+  d.querySelector(".rm").onclick=()=>{C.clips.splice(i,1);renderClips()};return d}))}
 function addClip(quiet){const a=P($("#cs").value),b=P($("#ce").value);
  if(isNaN(a)||isNaN(b)){csay("Write the time like 1:30 or 90.",1);return false}
  if(b<=a){csay("End time must be after the start time.",1);return false}
@@ -362,10 +419,10 @@ function addClip(quiet){const a=P($("#cs").value),b=P($("#ce").value);
 $("#cadd").onclick=()=>addClip();
 
 /* upload from device */
-function upload(file,kind){return new Promise((res,rej)=>{
- const x=new XMLHttpRequest();C.xhr=x;x.open("POST","/api/upload");
- x.upload.onprogress=e=>{if(e.lengthComputable)cphase("Uploading",e.loaded/e.total*100,e.loaded,e.total)};
- x.upload.onload=()=>cphase("Processing file",null);
+function upload(file,kind,X=C,p="c"){return new Promise((res,rej)=>{
+ const x=new XMLHttpRequest();X.xhr=x;x.open("POST","/api/upload");
+ x.upload.onprogress=e=>{if(e.lengthComputable)setProg(p,"Uploading",e.loaded/e.total*100,e.loaded,e.total)};
+ x.upload.onload=()=>setProg(p,"Processing file",null);
  x.onload=()=>{let j={};try{j=JSON.parse(x.responseText)}catch{}
   if(x.status>=200&&x.status<300)res(j);else rej(new Error(x.status===413?"Failed: file is larger than the "+C.limit+" limit.":j.error||"Upload failed."))};
  x.onerror=()=>rej(new Error("Upload failed. Check your connection."));
@@ -409,9 +466,10 @@ $("#clipurl").addEventListener("keydown",e=>{if(e.key==="Enter")loadLink()});
 async function makeClips(){
  const s=C.src;if(!s||!s.id||C.busy)return;csay("");
  const img=s.kind==="image";
- if(!img&&!C.clips.length&&!addClip(true))return;
+ let plain=C.clips.filter(c=>!c.src);
+ if(!img&&!plain.length){if(C.clips.length)return csay("Clips that have text use their own Download button above.");if(!addClip(true))return;plain=C.clips.filter(c=>!c.src)}
  const body={source:s.id,mode:$("#cmode").value};
- if(img)body.seconds=+$("#csec").value||5;else body.clips=C.clips;
+ if(img)body.seconds=+$("#csec").value||5;else body.clips=plain.map(c=>({start:c.start,end:c.end}));
  lockUI(true);$("#cprog").hidden=false;$("#cres").hidden=true;cphase("Starting…",null);
  C.ctrl=new AbortController();const sig={signal:C.ctrl.signal};C.job=null;
  try{C.job=(await(await api("/api/clip",{method:"POST",headers:J,body:JSON.stringify(body),...sig})).json()).id;
@@ -422,14 +480,14 @@ async function makeClips(){
   if(e.name==="AbortError")csay("Cancelled.");else clipFail(s.name,e.message)}
  C.job=null;lockUI(false)}
 $("#cgo").onclick=makeClips;
-function showResult(id,files){const box=$("#cfiles");
+function showResult(id,files,p="c"){const box=$("#"+p+"files");
  const zip=document.createElement("a");zip.className="btn pri go";zip.style.textAlign="center";zip.href="/api/jobs/"+id+"/zip";
  zip.textContent="Download all as ZIP ("+files.length+" file"+(files.length>1?"s":"")+")";
- box.replaceChildren(zip,...files.map(f=>{const d=document.createElement("div");d.className="item";
+ box.replaceChildren(...(p==="c"?[zip]:[]),...files.map(f=>{const d=document.createElement("div");d.className="item";
   d.innerHTML="<div><b></b><small></small></div><a class='btn ghost'>Download</a>";
   d.querySelector("b").textContent=f.name;d.querySelector("small").textContent=fmt(f.size);
   const a=d.querySelector("a");a.href="/api/jobs/"+id+"/files/"+f.i;a.download=f.name;return d}));
- $("#cres").hidden=false}
+ $("#"+p+"res").hidden=false}
 $("#ccancel").onclick=()=>{if(!C.busy)return;C.xhr&&C.xhr.abort();C.ctrl&&C.ctrl.abort();if(C.job)fetch("/api/jobs/"+C.job,{method:"DELETE"})};
 
 /* ===== timeline editor ===== */
@@ -466,12 +524,12 @@ function tlRender(){const W=$("#tlv").clientWidth,tot=tlTotal();if(!W||!tot)retu
    if(u){const im=document.createElement("img");im.src=u;im.alt="";im.style.left=k*tw+"px";im.style.width=tw+"px";d.appendChild(im)}}
   x+=w;return d}));tlHead()}
 function tlSeek(t){TL.ph=Math.max(0,Math.min(t,tlTotal()));const l=tlLoc(TL.ph);TL.cur=l.i;
- try{$("#pv").currentTime=TL.segs[l.i].a+l.off}catch{}tlHead()}
-function tlPause(){TL.playing=false;$("#pv").pause();tlHead()}
+ try{$("#ev").currentTime=TL.segs[l.i].a+l.off}catch{}tlHead()}
+function tlPause(){TL.playing=false;$("#ev").pause();tlHead()}
 function tlPlay(){if(!TL.segs.length)return;if(TL.playing)return tlPause();
  tlSeek(TL.ph>=tlTotal()-0.05?0:TL.ph);
- $("#pv").play().then(()=>{TL.playing=true;tlHead();requestAnimationFrame(tlLoop)}).catch(()=>tsay("Your browser can't play this video, but you can still split and export.",1))}
-function tlLoop(){if(!TL.playing)return;const pv=$("#pv"),ct=pv.currentTime;let g=TL.segs[TL.cur];
+ $("#ev").play().then(()=>{TL.playing=true;tlHead();requestAnimationFrame(tlLoop)}).catch(()=>tsay("Your browser can't play this video, but you can still split and export.",1))}
+function tlLoop(){if(!TL.playing)return;const pv=$("#ev"),ct=pv.currentTime;let g=TL.segs[TL.cur];
  if(!g||ct<g.a-0.3||ct>g.b+0.3){let i=TL.segs.findIndex(x=>ct>=x.a-0.05&&ct<x.b);if(i<0)i=TL.segs.findIndex(x=>x.a>ct);
   if(i<0){TL.ph=tlTotal();return tlPause()}TL.cur=i;g=TL.segs[i];if(ct<g.a)pv.currentTime=g.a}
  if(ct>=g.b-0.03){const n=TL.segs[TL.cur+1];if(!n){TL.ph=tlTotal();return tlPause()}
@@ -486,8 +544,8 @@ async function tlThumbs(tok){const v=document.createElement("video");v.muted=tru
   try{cx.drawImage(v,0,0,cv.width,cv.height);TL.th[i]=cv.toDataURL("image/jpeg",.6)}catch{}
   if(i%4===3||i===TL.N-1)tlRender()}}
 function tlInit(s){const tok=++TL.tok;tlPause();const box=$("#tl");
- if(s.kind!=="video"){box.hidden=true;$("#pv").controls=true;return}
- const pv=$("#pv");pv.controls=false;
+ if(s.kind!=="video"){box.hidden=true;$("#ev").controls=true;return}
+ const pv=$("#ev");pv.controls=false;
  Object.assign(TL,{segs:[],sel:-1,ph:0,cur:0,undo:[],redo:[],th:[],dur:0,asp:0,url:pv.getAttribute("src")||""});
  box.hidden=false;tsay("Click a part to select it. Drag on the timeline to move the playhead.");
  const go=()=>{const d=s.duration||(isFinite(pv.duration)?pv.duration:0);if(!d||tok!==TL.tok)return;
@@ -500,7 +558,7 @@ tlv.addEventListener("pointerdown",e=>{if(!TL.segs.length)return;e.preventDefaul
 tlv.addEventListener("pointermove",e=>{if(tlDrag)tlSeek(tlX(e))});
 ["pointerup","pointercancel"].forEach(n=>tlv.addEventListener(n,()=>{tlDrag=false}));
 new ResizeObserver(tlRender).observe(tlv);
-$("#pv").addEventListener("ended",()=>{if(TL.playing){TL.ph=tlTotal();tlPause()}});
+$("#ev").addEventListener("ended",()=>{if(TL.playing){TL.ph=tlTotal();tlPause()}});
 $("#tPlay").onclick=tlPlay;
 $("#tSplit").onclick=()=>{if(!TL.segs.length)return;const r=tlSplit();
  if(r==="edge")tsay("Move the playhead inside a part (not on its edge) to split.",1);
@@ -512,26 +570,146 @@ $("#tDel").onclick=()=>{const r=tlDelete();
 $("#tUndo").onclick=()=>{if(tlUndo()){tlSeek(TL.ph);tlRender();tsay("Undone.")}};
 $("#tRedo").onclick=()=>{if(tlRedo()){tlSeek(TL.ph);tlRender();tsay("Redone.")}};
 document.addEventListener("keydown",e=>{
- if($("#clip").hidden||$("#tl").hidden||/INPUT|SELECT|TEXTAREA/.test(e.target.tagName))return;
+ if($("#export").hidden||$("#tl").hidden||/INPUT|SELECT|TEXTAREA/.test(e.target.tagName))return;
  const k=e.key.toLowerCase();
  if(k===" "){e.preventDefault();tlPlay()}
  else if(k==="s"&&!e.ctrlKey&&!e.metaKey)$("#tSplit").click();
  else if(k==="delete"||k==="backspace"){e.preventDefault();$("#tDel").click()}
  else if((e.ctrlKey||e.metaKey)&&k==="z"){e.preventDefault();(e.shiftKey?$("#tRedo"):$("#tUndo")).click()}
  else if((e.ctrlKey||e.metaKey)&&k==="y"){e.preventDefault();$("#tRedo").click()}});
-async function tlExport(){const s=C.src;if(!s||C.busy||!TL.segs.length)return;
+async function tlExport(tr){const s=E.cur;if(!s||E.busy||!TL.segs.length)return;
  if(!s.id)return tsay("Please wait until the upload finishes.",1);
- const parts=tlParts();
- if(parts.length===1&&parts[0][0]<0.05&&Math.abs(parts[0][1]-TL.dur)<0.1)return tsay("Make an edit first: Split, select a part, then Delete.",1);
- tlPause();csay("");tsay("");lockUI(true);$("#cprog").hidden=false;$("#cres").hidden=true;cphase("Starting…",null);
+ const parts=tlParts(),same=parts.length===1&&parts[0][0]<0.05&&Math.abs(parts[0][1]-TL.dur)<0.1;
+ tlPause();tsay("");$("#eres").hidden=true;
+ if(same){if(!tr)return tsay("Make an edit first: Split, select a part, then Delete.",1);return toClip(s)}
+ await runJob(E,"e","/api/edit",{headers:J,body:JSON.stringify({source:s.id,segments:parts,to_source:!!tr})},"Exporting your edit",(j,id)=>{
+  if(tr)return toClip(j.source);
+  showResult(id,j.files,"e");
+  addHist({name:s.name+" (edited)",format:"EDIT",quality:parts.length+(parts.length>1?" parts":" part"),date:new Date().toISOString(),status:"Completed"})})}
+function toClip(src){setSource(src,"/api/source/"+src.id+"/stream");location.hash="clip";csay("Your edited video is in Clip. Cut it into clips below.")}
+$("#tExp").onclick=()=>tlExport(false);$("#tTr").onclick=()=>tlExport(true);
+
+
+/* ===== shared helpers for Export + Text ===== */
+const chip=t=>{const c=document.createElement("span");c.className="chip";c.textContent=t;return c};
+async function runJob(X,p,url,init,label,done){
+ if(X.busy)return;X.say("");X.busy=true;$("#"+p+"prog").hidden=false;setProg(p,"Starting…",null);
+ X.ctrl=new AbortController();const sig={signal:X.ctrl.signal};X.job=null;
+ try{X.job=(await(await api(url,{method:"POST",...init,...sig})).json()).id;
+  const j=await pollJob(X.job,sig,j=>setProg(p,j.status==="queued"?"Waiting…":label,j.status==="processing"?j.pct:null));
+  $("#"+p+"prog").hidden=true;await done(j,X.job)}
+ catch(e){$("#"+p+"prog").hidden=true;if(e.name==="AbortError")X.say("Cancelled.");else X.say(e.message,1)}
+ X.job=null;X.busy=false}
+function bar(p,kinds,cb){
+ const el=document.querySelector(`[data-bar=${p}]`),X={busy:false,xhr:null,ctrl:null,job:null,blob:null,cur:null},LB={photo:"Photo",video:"Video",link:"Link"},q=s=>el.querySelector(s);
+ el.innerHTML=`<div class="search"><div class="pw"><button class="btn pri plus" aria-label="Add">+</button><div class="menu" hidden>${kinds.map(k=>`<button data-a="${k}">${LB[k]}</button>`).join("")}</div></div><span class="hint">Tap + to add a ${kinds.map(k=>LB[k]).join(" or ")}</span><input class="lk" placeholder="Paste a video link here" autocomplete="off" hidden><button class="btn pri ld" hidden>Load</button></div><div class="bm"></div><div id="${p}prog" hidden><div class="row"><span id="${p}phase"></span><span id="${p}pct"></span></div><div class="bar" id="${p}bar"><i></i></div><div class="row" style="margin:8px 0 0"><span id="${p}size"></span><button class="btn ghost cx" style="padding:6px 14px">Cancel</button></div></div><input type="file" class="fv" accept="video/*,audio/*,.mkv,.avi,.mov,.webm" hidden><input type="file" class="fp" accept="image/*" hidden>`;
+ const m=q(".menu"),pr=$("#"+p+"prog");
+ X.say=(t,e)=>{q(".bm").textContent=t||"";q(".bm").className="bm"+(e?" err":"")};
+ q(".plus").onclick=e=>{e.stopPropagation();m.hidden=!m.hidden};document.addEventListener("click",()=>m.hidden=true);
+ m.onclick=e=>{const a=e.target.dataset.a;if(!a)return;m.hidden=true;if(X.busy)return X.say("Please wait, or press Cancel first.",1);X.say("");
+  if(a==="video")q(".fv").click();else if(a==="photo")q(".fp").click();else{q(".lk").hidden=q(".ld").hidden=false;q(".hint").hidden=true;q(".lk").focus()}};
+ async function pick(f,kind){if(!f||X.busy)return;
+  if(f.size>C.max)return X.say("Failed: \""+f.name+"\" is "+fmt(f.size)+". The limit is "+C.limit+".",1);
+  X.say("");X.busy=true;pr.hidden=false;setProg(p,"Uploading",0,0,f.size);
+  if(X.blob)URL.revokeObjectURL(X.blob);X.blob=URL.createObjectURL(f);
+  const s={id:null,name:f.name,kind:kind==="image"?"image":"video",size:f.size};cb(s,X.blob,false);
+  try{Object.assign(s,await upload(f,kind,X,p));pr.hidden=true;cb(s,X.blob,true)}
+  catch(e){pr.hidden=true;cb(null);if(e.name==="AbortError")X.say("Upload cancelled.");else X.say(e.message,1)}
+  X.busy=false}
+ q(".fv").onchange=e=>{const f=e.target.files[0];e.target.value="";pick(f,"video")};
+ q(".fp").onchange=e=>{const f=e.target.files[0];e.target.value="";pick(f,"image")};
+ const load=async()=>{const url=q(".lk").value.trim();if(!url)return X.say("Paste a link first.",1);
+  await runJob(X,p,"/api/source/link",{headers:J,body:JSON.stringify({url})},"Downloading link",j=>cb(j.source,"/api/source/"+j.source.id+"/stream",true))};
+ q(".ld").onclick=load;q(".lk").addEventListener("keydown",e=>{if(e.key==="Enter")load()});
+ q(".cx").onclick=()=>{if(!X.busy)return;X.xhr&&X.xhr.abort();X.ctrl&&X.ctrl.abort();if(X.job)fetch("/api/jobs/"+X.job,{method:"DELETE"})};
+ return X}
+
+/* ===== Export section ===== */
+const E=bar("e",["video","link"],setE);
+function setE(s,url){const w=$("#ew");if(!s){w.hidden=true;E.cur=null;return}
+ if(E.cur!==s){E.cur=s;w.hidden=false;$("#eres").hidden=true;const v=$("#ev");v.src=url;v.load();tlInit(s)}
+ $("#etitle").textContent=s.name;
+ $("#echips").replaceChildren(...[s.kind.toUpperCase(),s.size&&fmt(s.size),s.duration&&("Duration "+T(s.duration))].filter(Boolean).map(chip))}
+
+/* ===== Text section ===== */
+const TX=bar("x",["photo","video"],(s,u,f)=>setX(s,u,f));Object.assign(TX,{L:[],sel:-1,ret:null});
+const FONTS=["Arial","Segoe UI","Verdana","Tahoma","Trebuchet MS","Georgia","Times New Roman","Courier New","Impact","Comic Sans MS","Nirmala UI","Noto Sans Bengali","Kalpurush"];
+const SP=[["t","Text","text"],["font","Font","sel",FONTS],["size","Size","range",2,40],["color","Text color","color"],["bg","Background color","color"],["bga","Background opacity","range",0,100],["align","Alignment","sel",["left","center","right"]],["rot","Rotation","range",-180,180],["ow","Outline / stroke","range",0,25],["oc","Outline color","color"],["sh","Shadow","range",0,30],["op","Opacity","range",5,100],["anim","Animation","sel",["none","fade","slide-up","slide-left","slide-right"]],["s","Start (sec)","number"],["e","End (sec)","number"]];
+const hexA=(h,a)=>{const n=parseInt(h.slice(1),16);return`rgba(${n>>16},${n>>8&255},${n&255},${a/100})`};
+$("#pg").replaceChildren(...SP.map(([k,n,t,a,b])=>{const l=document.createElement("label"),i=document.createElement(t==="sel"?"select":t==="text"?"textarea":"input");
+ l.textContent=n;i.dataset.k=k;
+ if(t==="sel"){i.className="field";a.forEach(o=>i.add(new Option(o,o)))}
+ else if(t==="range"){i.type="range";i.min=a;i.max=b}
+ else{i.className="field";if(t==="text")i.rows=2;else{i.type=t;if(t==="number"){i.min=0;i.step=.1}}}
+ i.oninput=()=>{const L=TX.L[TX.sel];if(!L)return;L[k]=(t==="range"||t==="number")?+i.value:i.value;xdraw()};
+ l.append(i);return l}));
+const xdur=()=>TX.cur&&TX.cur.kind==="image"?(+$("#xlen").value||5):(TX.cur&&TX.cur.duration)||$("#xv").duration||0;
+function xstyle(el,L,H){const fp=L.size/100*H,o=fp*L.ow/100,b=fp*L.sh/100;el.textContent=L.t;
+ Object.assign(el.style,{left:L.x*100+"%",top:L.y*100+"%",fontSize:fp+"px",fontFamily:`"${L.font}",sans-serif`,fontWeight:L.bold?700:400,fontStyle:L.italic?"italic":"normal",color:L.color,textAlign:L.align,opacity:L.op/100,transform:`translate(-50%,-50%) rotate(${L.rot}deg)`,background:L.bga?hexA(L.bg,L.bga):"transparent",webkitTextStroke:o?o+"px "+L.oc:"0",paintOrder:"stroke fill",textShadow:b?`${b/3}px ${b/3}px ${b}px rgba(0,0,0,.8)`:"none"});
+ if(el.classList.contains("sel")){const d=document.createElement("i");d.className="hd";el.append(d)}}
+function xdraw(){const ov=$("#ov"),img=TX.cur&&TX.cur.kind==="image",t=$("#xv").currentTime||0,H=ov.clientHeight;
+ ov.replaceChildren(...TX.L.flatMap((L,i)=>{if(!(i===TX.sel||img||(t>=L.s&&t<=L.e)))return[];
+  const el=document.createElement("div");el.className="tx"+(i===TX.sel?" sel":"");el.dataset.i=i;xstyle(el,L,H);return[el]}));
+ $("#xchips").replaceChildren(...TX.L.map((L,i)=>{const b=document.createElement("button");b.className="btn ghost sm tgl"+(i===TX.sel?" on":"");b.textContent=(i+1)+": "+(L.t.split("\n")[0].slice(0,14)||"…");b.onclick=()=>xsel(i);return b}))}
+function xpanel(){const L=TX.L[TX.sel];$("#xprops").hidden=!L;if(!L)return;
+ document.querySelectorAll("#pg [data-k]").forEach(i=>i.value=L[i.dataset.k]);
+ $("#xB").classList.toggle("on",!!L.bold);$("#xI").classList.toggle("on",!!L.italic)}
+function xsel(i){TX.sel=i;xpanel();xdraw()}
+function setX(s,url,fin,ret){const w=$("#xw");if(!s){w.hidden=true;TX.cur=null;return}
+ if(TX.cur!==s){TX.cur=s;TX.L=[];TX.sel=-1;TX.ret=ret||null;w.hidden=false;$("#xres").hidden=true;
+  const im=s.kind==="image";$("#xv").hidden=im;$("#xi").hidden=!im;$("#xlenr").hidden=!im;
+  if(im){$("#xv").removeAttribute("src");$("#xi").src=url}else{$("#xi").removeAttribute("src");$("#xv").src=url;$("#xv").load()}
+  xpanel();xdraw()}
+ $("#xtitle").textContent=s.name}
+["loadedmetadata","timeupdate","seeked"].forEach(n=>$("#xv").addEventListener(n,xdraw));$("#xi").onload=xdraw;new ResizeObserver(xdraw).observe($("#ov"));
+$("#xAdd").onclick=()=>{if(!TX.cur)return;TX.L.push({t:"Your text",font:"Arial",size:8,bold:true,italic:false,color:"#ffffff",bg:"#000000",bga:0,align:"center",x:.5,y:.5,rot:0,ow:6,oc:"#000000",sh:0,op:100,anim:"none",s:0,e:+(xdur()||3600).toFixed(1)});xsel(TX.L.length-1)};
+$("#xDel").onclick=()=>{if(TX.sel<0)return;TX.L.splice(TX.sel,1);xsel(Math.min(TX.sel,TX.L.length-1))};
+$("#xB").onclick=()=>{const L=TX.L[TX.sel];if(L){L.bold=!L.bold;xpanel();xdraw()}};
+$("#xI").onclick=()=>{const L=TX.L[TX.sel];if(L){L.italic=!L.italic;xpanel();xdraw()}};
+let xd=null;const ovr=$("#ov");
+ovr.addEventListener("pointerdown",e=>{const el=e.target.closest(".tx");if(!el)return;e.preventDefault();
+ const i=+el.dataset.i,r=ovr.getBoundingClientRect(),hd=e.target.classList.contains("hd");if(i!==TX.sel)xsel(i);
+ const L=TX.L[i],cx=r.left+L.x*r.width,cy=r.top+L.y*r.height;
+ xd=hd?{m:"r",i,s0:L.size,d0:Math.hypot(e.clientX-cx,e.clientY-cy)||1,cx,cy}:{m:"m",i,dx:L.x-(e.clientX-r.left)/r.width,dy:L.y-(e.clientY-r.top)/r.height};
+ ovr.setPointerCapture(e.pointerId)});
+ovr.addEventListener("pointermove",e=>{if(!xd)return;const L=TX.L[xd.i],r=ovr.getBoundingClientRect();
+ if(xd.m==="m"){L.x=Math.min(1,Math.max(0,(e.clientX-r.left)/r.width+xd.dx));L.y=Math.min(1,Math.max(0,(e.clientY-r.top)/r.height+xd.dy))}
+ else{L.size=Math.min(40,Math.max(2,xd.s0*Math.hypot(e.clientX-xd.cx,e.clientY-xd.cy)/xd.d0));document.querySelector('#pg [data-k="size"]').value=L.size}
+ const el=ovr.querySelector(`[data-i="${xd.i}"]`);if(el)xstyle(el,L,ovr.clientHeight)});
+["pointerup","pointercancel"].forEach(n=>ovr.addEventListener(n,()=>xd=null));
+ovr.addEventListener("dblclick",()=>document.querySelector('#pg [data-k="t"]').focus());
+function xcanvas(L,H){const fp=L.size/100*H,lines=L.t.split("\n"),lh=fp*1.25,c=document.createElement("canvas"),x=c.getContext("2d"),f=`${L.italic?"italic ":""}${L.bold?"bold ":""}${fp}px "${L.font}",sans-serif`;
+ x.font=f;const w=Math.max(...lines.map(l=>x.measureText(l).width)),h=lh*lines.length,bw=w+fp*.5,bh=h+fp*.5,mg=fp*L.ow/100+fp*L.sh/100*2+4,D=Math.ceil(Math.hypot(bw+mg*2,bh+mg*2));
+ c.width=c.height=D;x.font=f;x.translate(D/2,D/2);x.rotate(L.rot*Math.PI/180);x.globalAlpha=L.op/100;
+ if(L.bga){x.fillStyle=hexA(L.bg,L.bga);x.fillRect(-bw/2,-bh/2,bw,bh)}
+ x.textBaseline="middle";x.lineJoin="round";x.textAlign=L.align;const ax=L.align==="left"?-w/2:L.align==="right"?w/2:0;
+ if(L.sh){x.shadowColor="rgba(0,0,0,.8)";x.shadowBlur=fp*L.sh/100;x.shadowOffsetX=x.shadowOffsetY=x.shadowBlur/3}
+ lines.forEach((l,i)=>{const y=-h/2+lh*(i+.5);if(L.ow){x.lineWidth=fp*L.ow/100;x.strokeStyle=L.oc;x.strokeText(l,ax,y)}x.fillStyle=L.color;x.fillText(l,ax,y)});
+ return c}
+async function xrender(toSrc){const s=TX.cur;if(!s||TX.busy)return;
+ if(!s.id)return TX.say("Please wait until the upload finishes.",1);
+ const ls=TX.L.filter(l=>l.t.trim());if(!ls.length)return TX.say("Add some text first.",1);
+ const img=s.kind==="image",el=img?$("#xi"):$("#xv"),W=(img?el.naturalWidth:el.videoWidth)||1280,H=(img?el.naturalHeight:el.videoHeight)||720,fd=new FormData(),meta=[];
+ fd.append("source",s.id);fd.append("len",$("#xlen").value||5);if(toSrc)fd.append("to_source","1");
+ for(const[i,l]of ls.entries()){const c=xcanvas(l,H);fd.append("l"+i,await new Promise(r=>c.toBlob(r,"image/png")),"l.png");
+  meta.push({x:l.x*W-c.width/2,y:l.y*H-c.height/2,s:l.s,e:l.e,anim:l.anim,ad:.5})}
+ fd.append("meta",JSON.stringify(meta));$("#xres").hidden=true;
+ await runJob(TX,"x","/api/text",{body:fd},"Adding text",(j,id)=>{const r=TX.ret;
+  if(toSrc&&r&&j.source&&C.src&&C.src.id===r.sid&&C.clips.includes(r.item)){r.item.src=j.source;renderClips();location.hash="clip";csay("Text added. Your clip is updated in the list.")}
+  else{showResult(id,j.files,"x");if(!toSrc)save("/api/jobs/"+id+"/files/0",j.files[0].name);TX.say("Done.")}
+  addHist({name:s.name+" (text)",format:"TEXT",quality:ls.length+" text",date:new Date().toISOString(),status:"Completed"})})}
+$("#xSave").onclick=()=>xrender(!!TX.ret);$("#xDl").onclick=()=>xrender(false);
+
+/* Clip -> Text: cut only that clip, open it in Text */
+async function clipToText(c){const s=C.src;if(!s||!s.id||C.busy)return;
+ if(s.kind!=="video")return csay("Text works on videos.",1);
+ csay("");lockUI(true);$("#cprog").hidden=false;$("#cres").hidden=true;cphase("Preparing clip",null);
  C.ctrl=new AbortController();const sig={signal:C.ctrl.signal};C.job=null;
- try{C.job=(await(await api("/api/edit",{method:"POST",headers:J,body:JSON.stringify({source:s.id,segments:parts}),...sig})).json()).id;
-  const j=await pollJob(C.job,sig,j=>cphase(j.status==="queued"?"Waiting…":"Exporting your edit",j.status==="processing"?j.pct:null));
-  showResult(C.job,j.files);$("#cprog").hidden=true;
-  addHist({name:s.name+" (edited)",format:"EDIT",quality:parts.length+(parts.length>1?" parts":" part"),date:new Date().toISOString(),status:"Completed"})}
+ try{C.job=(await(await api("/api/clip",{method:"POST",headers:J,body:JSON.stringify({source:s.id,mode:$("#cmode").value,clips:[{start:c.start,end:c.end}],to_source:true}),...sig})).json()).id;
+  const j=await pollJob(C.job,sig,j=>cphase(j.status==="queued"?"Waiting…":"Preparing clip",j.status==="processing"?j.pct:null));
+  $("#cprog").hidden=true;setX(j.source,"/api/source/"+j.source.id+"/stream",true,{item:c,sid:s.id});location.hash="text"}
  catch(e){$("#cprog").hidden=true;if(e.name==="AbortError")csay("Cancelled.");else clipFail(s.name,e.message)}
  C.job=null;lockUI(false)}
-$("#tExp").onclick=tlExport;
 
 route();
 </script>

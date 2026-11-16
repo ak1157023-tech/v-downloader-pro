@@ -1,5 +1,5 @@
 """V-Downloader Pro - backend. Run: python app.py  (or gunicorn app:app)"""
-import ipaddress, os, re, shutil, socket, subprocess, tempfile, threading, time, uuid, zipfile
+import ipaddress, json, os, re, shutil, socket, subprocess, tempfile, threading, time, uuid, zipfile
 from urllib.parse import urljoin, urlparse, unquote, quote
 
 import requests
@@ -21,6 +21,27 @@ LABELS = {"480": "480p", "720": "720p", "1080": "1080p", "2k": "2K", "4k": "4K"}
 EXT = {".mp4", ".webm", ".mkv", ".mov", ".m4v", ".avi", ".mp3", ".m4a", ".ogg", ".wav", ".flac"}
 UA = {"User-Agent": "Mozilla/5.0 V-Downloader-Pro"}
 JOBS, HITS = {}, {}
+_ENC = []
+
+
+def enc():
+    """H.264 encoder args: GPU encoder if this machine really has one, otherwise fast multi-threaded x264 (CRF 18 = visually lossless)."""
+    if not _ENC:
+        args = ["-c:v", "libx264", "-preset", "veryfast", "-crf", "18", "-threads", "0"]
+        try:
+            names = subprocess.run([FFMPEG, "-hide_banner", "-encoders"], capture_output=True, text=True, timeout=10).stdout
+            for n, a in (("h264_nvenc", ["-preset", "p4", "-cq", "18", "-b:v", "0"]),
+                         ("h264_qsv", ["-global_quality", "18"]),
+                         ("h264_videotoolbox", ["-q:v", "70"])):
+                if n in names and subprocess.run([FFMPEG, "-v", "error", "-f", "lavfi", "-i", "color=s=256x256:d=0.1",
+                                                  "-pix_fmt", "yuv420p", "-c:v", n, "-f", "null", "-"],
+                                                 capture_output=True, timeout=20).returncode == 0:
+                    args = ["-c:v", n] + a
+                    break
+        except Exception:
+            pass
+        _ENC.append(args)
+    return _ENC[0]
 
 app = Flask(__name__, static_folder="static")
 app.config["MAX_CONTENT_LENGTH"] = MAX_BYTES + (8 << 20)  # file + multipart overhead
@@ -164,7 +185,7 @@ def direct():
     def gen():
         got = 0
         try:
-            for c in r.iter_content(1 << 16):
+            for c in r.iter_content(1 << 20):
                 got += len(c)
                 if got > MAX_BYTES:
                     break
@@ -200,7 +221,7 @@ def run_direct_audio(j, url, q):
     src, got = os.path.join(j["dir"], "src"), 0
     j["status"] = "downloading"
     with open(src, "wb") as f:
-        for c in r.iter_content(1 << 16):
+        for c in r.iter_content(1 << 20):
             if j["cancel"].is_set():
                 raise Cancelled
             got += len(c)
@@ -226,7 +247,7 @@ def run_extracted(j, url, q):
         elif d["status"] == "finished":
             j["status"], j["pct"] = "processing", 100
 
-    o = {"quiet": True, "noplaylist": True, "progress_hooks": [hook],
+    o = {"quiet": True, "noplaylist": True, "progress_hooks": [hook], "concurrent_fragment_downloads": 4,
          "outtmpl": os.path.join(j["dir"], "%(title).80s.%(ext)s")}
     if FFMPEG:
         o["ffmpeg_location"], o["merge_output_format"] = FFMPEG, "mp4"
@@ -421,7 +442,7 @@ def run_source(j, url, _q):
             raise ValueError(f"Failed: file is {hsize(total)}, the limit is {LIMIT_TXT}.")
         path, got = os.path.join(j["dir"], "src" + ext), 0
         with open(path, "wb") as fh:
-            for c in r.iter_content(1 << 16):
+            for c in r.iter_content(1 << 20):
                 if j["cancel"].is_set():
                     raise Cancelled
                 got += len(c)
@@ -445,7 +466,7 @@ def run_source(j, url, _q):
                 if t:
                     j["pct"] = d["downloaded_bytes"] * 100 / t
 
-        o = {"quiet": True, "noplaylist": True, "progress_hooks": [hook], "max_filesize": MAX_BYTES,
+        o = {"quiet": True, "noplaylist": True, "progress_hooks": [hook], "concurrent_fragment_downloads": 4, "max_filesize": MAX_BYTES,
              "outtmpl": os.path.join(j["dir"], "%(title).80s.%(ext)s"),
              "format": "bv*[height<=1080]+ba/b[height<=1080]/bv*+ba/b" if FFMPEG else "b[height<=1080]/b"}
         if FFMPEG:
@@ -482,7 +503,7 @@ def source_stream(sid):
     if not s:
         return jsonify(error="File expired. Please add it again."), 404
     s["t"] = time.time()
-    return send_file(s["path"], conditional=True)
+    return send_file(s["path"], conditional=True, as_attachment=bool(request.args.get("dl")), download_name=s["name"])
 
 
 def ffrun(j, cmd):
@@ -494,6 +515,47 @@ def ffrun(j, cmd):
             raise Cancelled
         time.sleep(0.3)
     return p.returncode == 0
+
+
+def ffprog(j, cmd, total):
+    """Run ffmpeg and report real progress (percent) into the job."""
+    cmd = cmd[:1] + ["-progress", "pipe:1", "-nostats", "-hide_banner"] + cmd[1:]
+    j["status"] = "processing"
+    p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
+    for line in p.stdout:
+        if j["cancel"].is_set():
+            p.kill()
+            p.wait()
+            raise Cancelled
+        if line.startswith("out_time_us="):
+            try:
+                j["pct"] = min(99, int(line.split("=")[1]) / 1e6 / total * 100)
+            except (ValueError, ZeroDivisionError):
+                pass
+    p.wait()
+    if p.returncode:
+        raise ValueError("The video could not be created.")
+
+
+def to_source(j, path, name):
+    """Make a finished file a new Clip/Text source (hard link: no copy, no extra time)."""
+    folder = tempfile.mkdtemp(prefix="vdp_src_")
+    dst = os.path.join(folder, "src" + os.path.splitext(path)[1])
+    try:
+        os.link(path, dst)
+    except OSError:
+        shutil.copy2(path, dst)
+    j["source"] = add_source(dst, name, "video", folder)
+
+
+def finish(j, out, body):
+    if not os.path.exists(out) or os.path.getsize(out) == 0:
+        raise ValueError("The video could not be created.")
+    name = os.path.basename(out)
+    j["files"].append({"name": name, "path": out, "size": os.path.getsize(out)})
+    j["pct"] = 100
+    if body.get("to_source"):
+        to_source(j, out, name)
 
 
 def clip_cmd(s, a, b, mode, out):
@@ -509,7 +571,7 @@ def clip_cmd(s, a, b, mode, out):
     m = ["-map", "0:v:0?", "-map", "0:a:0?"]
     if mode == "fast":  # no re-encoding: finishes in seconds
         return head + m + ["-c", "copy", "-avoid_negative_ts", "make_zero"] + mp4 + [out]
-    return head + m + ["-c:v", "libx264", "-preset", "veryfast", "-crf", "22", "-c:a", "aac", "-b:a", "160k"] + mp4 + [out]
+    return head + m + enc() + ["-c:a", "aac", "-b:a", "160k"] + mp4 + [out]
 
 
 def run_clip(j, body, _q):
@@ -537,6 +599,8 @@ def run_clip(j, body, _q):
             raise ValueError(f"Clip {n} could not be created. Check the start and end times.")
         j["files"].append({"name": os.path.basename(out), "path": out, "size": os.path.getsize(out)})
         j["pct"] = n * 100 / len(clips)
+    if body.get("to_source") and j["files"]:
+        to_source(j, j["files"][0]["path"], j["files"][0]["name"])
 
 
 @app.post("/api/clip")
@@ -567,7 +631,7 @@ def create_clip():
                 raise ValueError
     except (ValueError, TypeError, KeyError):
         return jsonify(error="Check your start and end times."), 400
-    j = start_job(run_clip, {"source": s["id"], "clips": clips, "mode": mode})
+    j = start_job(run_clip, {"source": s["id"], "clips": clips, "mode": mode, "to_source": bool(b.get("to_source"))})
     if not j:
         return jsonify(error="Server is busy. Try again in a minute."), 429
     return jsonify(id=j["id"])
@@ -627,25 +691,11 @@ def run_edit(j, body, _q):
     base = os.path.splitext(s["name"])[0][:60] or "video"
     out = os.path.join(j["dir"], f"{base}_edited.mp4")
     cmd += ["-filter_complex", ";".join(flt), "-map", "[v]"] + (["-map", "[a]"] if aud else [])
-    cmd += ["-c:v", "libx264", "-preset", "veryfast", "-crf", "22", "-pix_fmt", "yuv420p"]
-    cmd += (["-c:a", "aac", "-b:a", "160k"] if aud else []) + ["-movflags", "+faststart", "-progress", "pipe:1", "-nostats", out]
-    j["status"] = "processing"
-    p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
-    for line in p.stdout:
-        if j["cancel"].is_set():
-            p.kill()
-            p.wait()
-            raise Cancelled
-        if line.startswith("out_time_us="):
-            try:
-                j["pct"] = min(99, int(line.split("=")[1]) / 1e6 / total * 100)
-            except (ValueError, ZeroDivisionError):
-                pass
-    p.wait()
-    if p.returncode or not os.path.exists(out) or os.path.getsize(out) == 0:
-        raise ValueError("The edited video could not be created.")
-    j["files"].append({"name": os.path.basename(out), "path": out, "size": os.path.getsize(out)})
-    j["pct"] = 100
+    cmd += enc() + ["-pix_fmt", "yuv420p"]
+    cmd += (["-c:a", "aac", "-b:a", "192k"] if aud else []) + ["-movflags", "+faststart", out]
+    s["t"] = time.time()
+    ffprog(j, cmd, total)
+    finish(j, out, body)
 
 
 @app.post("/api/edit")
@@ -667,8 +717,92 @@ def create_edit():
             raise ValueError
     except (ValueError, TypeError):
         return jsonify(error="Check the edited timeline and try again."), 400
-    j = start_job(run_edit, {"source": s["id"], "segments": segs})
+    j = start_job(run_edit, {"source": s["id"], "segments": segs, "to_source": bool(b.get("to_source"))})
     if not j:
+        return jsonify(error="Server is busy. Try again in a minute."), 429
+    return jsonify(id=j["id"])
+
+
+# ---------- Text: layers are drawn by the browser (so the preview matches exactly) and laid over the video/photo ----------
+def run_text(j, body, _q):
+    try:
+        s = SOURCES.get(body["source"])
+        if not s or not os.path.exists(s["path"]):
+            raise ValueError("The source file expired. Please add it again.")
+        s["t"] = time.time()
+        img = s["kind"] == "image"
+        dur = body["len"] if img else (s.get("duration") or 3600.0)
+        cmd = [FFMPEG, "-y"] + (["-loop", "1", "-framerate", "30", "-t", f"{dur:.3f}"] if img else []) + ["-i", s["path"]]
+        flt, last = [], "0:v"
+        if img:
+            flt.append("[0:v]scale=trunc(iw/2)*2:trunc(ih/2)*2,format=yuv420p[b0]")
+            last = "b0"
+        for k, L in enumerate(body["layers"], 1):
+            cmd += ["-framerate", "30", "-i", L["png"]]
+            a, e, ad, an = L["s"], min(L["e"], dur), L["ad"], L["anim"]
+            x, y = f'{L["x"]:.1f}', f'{L["y"]:.1f}'
+            pr = f"min(1,max(0,(t-{a:.3f})/{ad}))"
+            if an == "slide-up":
+                y += f"+(1-{pr})*main_h*0.08"
+            elif an == "slide-left":
+                x += f"-(1-{pr})*main_w*0.12"
+            elif an == "slide-right":
+                x += f"+(1-{pr})*main_w*0.12"
+            chain = f"[{k}:v]format=rgba"
+            if an == "fade":
+                chain += (f",loop=loop=-1:size=1,trim=end={dur:.3f},fade=t=in:st={a:.3f}:d={ad}:alpha=1"
+                          f",fade=t=out:st={max(a, e - ad):.3f}:d={ad}:alpha=1")
+            flt.append(f"{chain}[o{k}]")
+            flt.append(f"[{last}][o{k}]overlay=x='{x}':y='{y}':enable='between(t,{a:.3f},{e:.3f})'[v{k}]")
+            last = f"v{k}"
+        cmd += ["-filter_complex", ";".join(flt), "-map", f"[{last}]", "-map", "0:a?"]
+        out = os.path.join(j["dir"], (os.path.splitext(s["name"])[0][:60] or "video") + "_text.mp4")
+        tail = enc() + ["-pix_fmt", "yuv420p"]
+        acs = [["-c:a", "aac", "-b:a", "192k"]]
+        if os.path.splitext(s["path"])[1].lower() in (".mp4", ".m4v"):
+            acs.insert(0, ["-c:a", "copy"])  # keep the original sound untouched (fast, no loss)
+        for ac in acs:
+            try:
+                ffprog(j, cmd + tail + ac + ["-movflags", "+faststart", out], dur)
+                break
+            except ValueError:
+                if ac is acs[-1]:
+                    raise
+        finish(j, out, body)
+    finally:
+        shutil.rmtree(body["tmp"], ignore_errors=True)
+
+
+@app.post("/api/text")
+def create_text():
+    if not FFMPEG:
+        return jsonify(error="Text needs FFmpeg, which is not installed on this server."), 400
+    s = SOURCES.get(request.form.get("source"))
+    if not s or s["kind"] not in ("video", "image"):
+        return jsonify(error="The source file expired. Please add it again."), 400
+    tmp, length = tempfile.mkdtemp(prefix="vdp_txt_"), 5.0
+    try:
+        layers = []
+        for i, m in enumerate(json.loads(request.form.get("meta") or "[]")[:30]):
+            f = request.files.get(f"l{i}")
+            if not f:
+                raise ValueError
+            path = os.path.join(tmp, f"l{i}.png")
+            f.save(path)
+            an = m.get("anim")
+            layers.append({"png": path, "x": float(m["x"]), "y": float(m["y"]), "s": max(0.0, float(m["s"])), "e": float(m["e"]),
+                           "anim": an if an in ("fade", "slide-up", "slide-left", "slide-right") else "none",
+                           "ad": min(3.0, max(0.1, float(m.get("ad") or 0.5)))})
+        length = float(request.form.get("len") or 5)
+        if not layers or (s["kind"] == "image" and not 1 <= length <= 600):
+            raise ValueError
+    except (ValueError, TypeError, KeyError, AttributeError):
+        shutil.rmtree(tmp, ignore_errors=True)
+        return jsonify(error="Check your text settings."), 400
+    j = start_job(run_text, {"source": s["id"], "layers": layers, "len": length, "tmp": tmp,
+                             "to_source": bool(request.form.get("to_source"))})
+    if not j:
+        shutil.rmtree(tmp, ignore_errors=True)
         return jsonify(error="Server is busy. Try again in a minute."), 429
     return jsonify(id=j["id"])
 

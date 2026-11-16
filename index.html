@@ -72,6 +72,17 @@ button:focus-visible{outline:3px solid #7dd3fc;outline-offset:2px}
 .menu button{display:block;width:100%;text-align:left;background:none;border:0;color:var(--ink);font:inherit;padding:11px 14px;border-radius:10px;cursor:pointer}
 .menu button:hover{background:#1a2647}
 .hint{flex:1;align-self:center;color:var(--mut);padding:0 8px}
+.tb{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.tt{color:var(--mut);font-variant-numeric:tabular-nums;min-width:120px;text-align:center}
+.tl{position:relative;height:76px;background:var(--panel2);border:1px solid var(--line);border-radius:14px;overflow:hidden;touch-action:none;cursor:pointer;user-select:none}
+.tr{position:absolute;left:0;right:0;top:6px;height:64px}
+.sg{position:absolute;top:0;bottom:0;border:2px solid #0b1020;border-radius:8px;overflow:hidden;background:#1a2647}
+.sg.sel{border-color:#38bdf8;box-shadow:0 0 0 2px #38bdf855}
+.sg img{position:absolute;top:0;height:100%;object-fit:cover;pointer-events:none}
+.ph{position:absolute;top:0;bottom:0;width:2px;background:#fff;box-shadow:0 0 8px #38bdf8;pointer-events:none}
+.ph::before{content:"";position:absolute;top:-1px;left:-5px;border:6px solid transparent;border-top-color:#fff}
+#tMsg{min-height:22px}#tMsg.err{color:var(--err)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
 .field{background:var(--panel2);border:1px solid var(--line);color:var(--ink);border-radius:12px;font:inherit;padding:10px 12px;width:110px}
 select.field{width:auto}
 .fr{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
@@ -142,6 +153,21 @@ a.btn{text-decoration:none;display:inline-block}
       <img id="pi" alt="" hidden>
       <p id="ctitle" style="font-size:1.1rem;font-weight:700;margin:12px 0 8px;overflow-wrap:anywhere"></p>
       <div class="chips" id="cchips"></div>
+    </div>
+    <div class="sec" id="tl" hidden>
+      <h3>Timeline editor</h3>
+      <div class="tb">
+        <button class="btn ghost sm" id="tPlay">Play</button>
+        <span class="tt" id="tTime">0:00 / 0:00</span>
+        <button class="btn ghost sm" id="tSplit" title="Cut the video at the playhead (S)">Split</button>
+        <button class="btn ghost sm" id="tDel" title="Ripple delete: removes the selected part and closes the gap (Delete)">Delete</button>
+        <button class="btn ghost sm" id="tUndo" title="Ctrl+Z">Undo</button>
+        <button class="btn ghost sm" id="tRedo" title="Ctrl+Y">Redo</button>
+        <button class="btn pri sm" id="tExp">Export video</button>
+      </div>
+      <div class="tl" id="tlv" aria-label="Video timeline"><div class="tr" id="tTrack"></div><div class="ph" id="tPh"></div></div>
+      <div class="hint" id="tMsg" role="status">Click a part to select it. Drag on the timeline to move the playhead.</div>
+      <p class="note">Split cuts at the playhead. Delete removes the selected part and the gap closes automatically. Shortcuts: Space = play/pause, S = split, Delete = remove part.</p>
     </div>
     <div class="sec" id="vctl">
       <h3>Pick the part you want</h3>
@@ -314,7 +340,7 @@ function setSource(s,preview){
  $("#ctitle").textContent=s.name;
  $("#cchips").replaceChildren(...[s.kind.toUpperCase(),s.size&&fmt(s.size),s.duration&&("Duration "+T(s.duration))].filter(Boolean).map(t=>{const c=document.createElement("span");c.className="chip";c.textContent=t;return c}));
  $("#cs").value="0:00";$("#ce").value=s.duration?T(s.duration):"";
- renderClips();$("#cw").hidden=false;$("#cgo").disabled=!s.id}
+ renderClips();$("#cw").hidden=false;$("#cgo").disabled=!s.id;tlInit(s)}
 $("#pv").onloadedmetadata=()=>{if(!$("#ce").value&&isFinite($("#pv").duration))$("#ce").value=T($("#pv").duration)};
 $("#pv").onerror=()=>csay("Your browser can't preview this format, but you can still type start/end times and create clips.");
 $("#setS").onclick=()=>$("#cs").value=T($("#pv").currentTime);
@@ -405,6 +431,107 @@ function showResult(id,files){const box=$("#cfiles");
   const a=d.querySelector("a");a.href="/api/jobs/"+id+"/files/"+f.i;a.download=f.name;return d}));
  $("#cres").hidden=false}
 $("#ccancel").onclick=()=>{if(!C.busy)return;C.xhr&&C.xhr.abort();C.ctrl&&C.ctrl.abort();if(C.job)fetch("/api/jobs/"+C.job,{method:"DELETE"})};
+
+/* ===== timeline editor ===== */
+/*MODEL*/
+const TL={segs:[],sel:-1,ph:0,dur:0,cur:0,N:8,asp:0,undo:[],redo:[],th:[],tok:0,url:"",playing:false};
+const tlTotal=()=>TL.segs.reduce((s,g)=>s+g.b-g.a,0);
+const tlStart=i=>TL.segs.slice(0,i).reduce((s,g)=>s+g.b-g.a,0);
+function tlLoc(t){t=Math.max(0,Math.min(t,tlTotal()));let acc=0;
+ for(let i=0;i<TL.segs.length;i++){const l=TL.segs[i].b-TL.segs[i].a;if(t<acc+l||i===TL.segs.length-1)return{i,off:Math.min(t-acc,l)};acc+=l}
+ return{i:0,off:0}}
+const tlSnap=()=>JSON.stringify({s:TL.segs,p:TL.ph});
+function tlPush(){TL.undo.push(tlSnap());if(TL.undo.length>100)TL.undo.shift();TL.redo=[]}
+function tlRestore(x){const o=JSON.parse(x);TL.segs=o.s;TL.ph=o.p;TL.sel=-1}
+function tlUndo(){if(!TL.undo.length)return false;TL.redo.push(tlSnap());tlRestore(TL.undo.pop());return true}
+function tlRedo(){if(!TL.redo.length)return false;TL.undo.push(tlSnap());tlRestore(TL.redo.pop());return true}
+function tlSplit(){const{i,off}=tlLoc(TL.ph),g=TL.segs[i],cut=g.a+off;
+ if(cut-g.a<0.1||g.b-cut<0.1)return"edge";
+ tlPush();TL.segs.splice(i,1,{a:g.a,b:cut},{a:cut,b:g.b});TL.sel=-1;return"ok"}
+function tlDelete(){if(TL.sel<0)return"none";if(TL.segs.length<2)return"last";
+ tlPush();TL.segs.splice(TL.sel,1);TL.ph=tlStart(Math.min(TL.sel,TL.segs.length-1));TL.sel=-1;return"ok"}
+function tlParts(){const o=[];for(const g of TL.segs){const p=o[o.length-1];if(p&&Math.abs(p[1]-g.a)<0.001)p[1]=g.b;else o.push([g.a,g.b])}return o}
+/*ENDMODEL*/
+const tsay=(t,e)=>{$("#tMsg").textContent=t||"";$("#tMsg").className="hint"+(e?" err":"")};
+function tlHead(){const W=$("#tlv").clientWidth,tot=tlTotal();
+ $("#tPh").style.left=(tot?Math.min(Math.max(W-2,0),TL.ph/tot*W):0)+"px";
+ $("#tTime").textContent=T(TL.ph)+" / "+T(tot);
+ $("#tUndo").disabled=!TL.undo.length;$("#tRedo").disabled=!TL.redo.length;$("#tDel").disabled=TL.sel<0;
+ $("#tPlay").textContent=TL.playing?"Pause":"Play"}
+function tlRender(){const W=$("#tlv").clientWidth,tot=tlTotal();if(!W||!tot)return;
+ const pps=W/tot,tw=Math.max(40,Math.round(64*(TL.asp||1.78)));let x=0;
+ $("#tTrack").replaceChildren(...TL.segs.map((g,i)=>{const w=Math.max(3,(g.b-g.a)*pps),d=document.createElement("div");
+  d.className="sg"+(i===TL.sel?" sel":"");d.style.left=x+"px";d.style.width=w+"px";
+  for(let k=0;k*tw<w;k++){const t=g.a+Math.min(g.b-g.a,(k*tw+tw/2)/pps),u=TL.th[Math.min(TL.N-1,Math.floor(t/TL.dur*TL.N))];
+   if(u){const im=document.createElement("img");im.src=u;im.alt="";im.style.left=k*tw+"px";im.style.width=tw+"px";d.appendChild(im)}}
+  x+=w;return d}));tlHead()}
+function tlSeek(t){TL.ph=Math.max(0,Math.min(t,tlTotal()));const l=tlLoc(TL.ph);TL.cur=l.i;
+ try{$("#pv").currentTime=TL.segs[l.i].a+l.off}catch{}tlHead()}
+function tlPause(){TL.playing=false;$("#pv").pause();tlHead()}
+function tlPlay(){if(!TL.segs.length)return;if(TL.playing)return tlPause();
+ tlSeek(TL.ph>=tlTotal()-0.05?0:TL.ph);
+ $("#pv").play().then(()=>{TL.playing=true;tlHead();requestAnimationFrame(tlLoop)}).catch(()=>tsay("Your browser can't play this video, but you can still split and export.",1))}
+function tlLoop(){if(!TL.playing)return;const pv=$("#pv"),ct=pv.currentTime;let g=TL.segs[TL.cur];
+ if(!g||ct<g.a-0.3||ct>g.b+0.3){let i=TL.segs.findIndex(x=>ct>=x.a-0.05&&ct<x.b);if(i<0)i=TL.segs.findIndex(x=>x.a>ct);
+  if(i<0){TL.ph=tlTotal();return tlPause()}TL.cur=i;g=TL.segs[i];if(ct<g.a)pv.currentTime=g.a}
+ if(ct>=g.b-0.03){const n=TL.segs[TL.cur+1];if(!n){TL.ph=tlTotal();return tlPause()}
+  if(Math.abs(n.a-g.b)>0.02)pv.currentTime=n.a;TL.cur++;g=n}
+ TL.ph=tlStart(TL.cur)+Math.max(0,Math.min(pv.currentTime-g.a,g.b-g.a));tlHead();requestAnimationFrame(tlLoop)}
+async function tlThumbs(tok){const v=document.createElement("video");v.muted=true;v.preload="auto";v.src=TL.url;
+ await new Promise(r=>{v.onloadeddata=r;v.onerror=r;setTimeout(r,8000)});
+ if(!v.videoWidth||tok!==TL.tok)return;TL.asp=v.videoWidth/v.videoHeight;
+ const cv=document.createElement("canvas");cv.height=96;cv.width=Math.round(96*TL.asp);const cx=cv.getContext("2d");
+ for(let i=0;i<TL.N;i++){if(tok!==TL.tok)return;v.currentTime=(i+.5)*TL.dur/TL.N;
+  await new Promise(r=>{v.onseeked=r;setTimeout(r,4000)});
+  try{cx.drawImage(v,0,0,cv.width,cv.height);TL.th[i]=cv.toDataURL("image/jpeg",.6)}catch{}
+  if(i%4===3||i===TL.N-1)tlRender()}}
+function tlInit(s){const tok=++TL.tok;tlPause();const box=$("#tl");
+ if(s.kind!=="video"){box.hidden=true;$("#pv").controls=true;return}
+ const pv=$("#pv");pv.controls=false;
+ Object.assign(TL,{segs:[],sel:-1,ph:0,cur:0,undo:[],redo:[],th:[],dur:0,asp:0,url:pv.getAttribute("src")||""});
+ box.hidden=false;tsay("Click a part to select it. Drag on the timeline to move the playhead.");
+ const go=()=>{const d=s.duration||(isFinite(pv.duration)?pv.duration:0);if(!d||tok!==TL.tok)return;
+  TL.dur=d;TL.segs=[{a:0,b:d}];TL.N=Math.min(60,Math.max(8,Math.ceil(d/10)));tlRender();tlThumbs(tok)};
+ if(s.duration)go();else pv.addEventListener("loadedmetadata",go,{once:true})}
+const tlv=$("#tlv");let tlDrag=false;
+const tlX=e=>{const r=tlv.getBoundingClientRect();return Math.max(0,Math.min(e.clientX-r.left,r.width))/(r.width||1)*tlTotal()};
+tlv.addEventListener("pointerdown",e=>{if(!TL.segs.length)return;e.preventDefault();tlDrag=true;tlv.setPointerCapture(e.pointerId);
+ if(TL.playing)tlPause();const t=tlX(e);TL.sel=tlLoc(Math.min(t,tlTotal()-1e-6)).i;tlSeek(t);tlRender()});
+tlv.addEventListener("pointermove",e=>{if(tlDrag)tlSeek(tlX(e))});
+["pointerup","pointercancel"].forEach(n=>tlv.addEventListener(n,()=>{tlDrag=false}));
+new ResizeObserver(tlRender).observe(tlv);
+$("#pv").addEventListener("ended",()=>{if(TL.playing){TL.ph=tlTotal();tlPause()}});
+$("#tPlay").onclick=tlPlay;
+$("#tSplit").onclick=()=>{if(!TL.segs.length)return;const r=tlSplit();
+ if(r==="edge")tsay("Move the playhead inside a part (not on its edge) to split.",1);
+ else{TL.cur=tlLoc(TL.ph).i;tsay("Split done. Click a part, then press Delete to remove it.");tlRender()}};
+$("#tDel").onclick=()=>{const r=tlDelete();
+ if(r==="none")tsay("Click a part on the timeline to select it first.",1);
+ else if(r==="last")tsay("You can't delete the whole video.",1);
+ else{tlSeek(TL.ph);tsay("Part removed and the gap was closed.");tlRender()}};
+$("#tUndo").onclick=()=>{if(tlUndo()){tlSeek(TL.ph);tlRender();tsay("Undone.")}};
+$("#tRedo").onclick=()=>{if(tlRedo()){tlSeek(TL.ph);tlRender();tsay("Redone.")}};
+document.addEventListener("keydown",e=>{
+ if($("#clip").hidden||$("#tl").hidden||/INPUT|SELECT|TEXTAREA/.test(e.target.tagName))return;
+ const k=e.key.toLowerCase();
+ if(k===" "){e.preventDefault();tlPlay()}
+ else if(k==="s"&&!e.ctrlKey&&!e.metaKey)$("#tSplit").click();
+ else if(k==="delete"||k==="backspace"){e.preventDefault();$("#tDel").click()}
+ else if((e.ctrlKey||e.metaKey)&&k==="z"){e.preventDefault();(e.shiftKey?$("#tRedo"):$("#tUndo")).click()}
+ else if((e.ctrlKey||e.metaKey)&&k==="y"){e.preventDefault();$("#tRedo").click()}});
+async function tlExport(){const s=C.src;if(!s||C.busy||!TL.segs.length)return;
+ if(!s.id)return tsay("Please wait until the upload finishes.",1);
+ const parts=tlParts();
+ if(parts.length===1&&parts[0][0]<0.05&&Math.abs(parts[0][1]-TL.dur)<0.1)return tsay("Make an edit first: Split, select a part, then Delete.",1);
+ tlPause();csay("");tsay("");lockUI(true);$("#cprog").hidden=false;$("#cres").hidden=true;cphase("Starting…",null);
+ C.ctrl=new AbortController();const sig={signal:C.ctrl.signal};C.job=null;
+ try{C.job=(await(await api("/api/edit",{method:"POST",headers:J,body:JSON.stringify({source:s.id,segments:parts}),...sig})).json()).id;
+  const j=await pollJob(C.job,sig,j=>cphase(j.status==="queued"?"Waiting…":"Exporting your edit",j.status==="processing"?j.pct:null));
+  showResult(C.job,j.files);$("#cprog").hidden=true;
+  addHist({name:s.name+" (edited)",format:"EDIT",quality:parts.length+(parts.length>1?" parts":" part"),date:new Date().toISOString(),status:"Completed"})}
+ catch(e){$("#cprog").hidden=true;if(e.name==="AbortError")csay("Cancelled.");else clipFail(s.name,e.message)}
+ C.job=null;lockUI(false)}
+$("#tExp").onclick=tlExport;
 
 route();
 </script>

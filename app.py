@@ -86,7 +86,8 @@ def rate_limit():
 
 @app.get("/")
 def home():
-    return send_from_directory("static", "index.html")
+    base = os.path.dirname(os.path.abspath(__file__))  # index.html next to app.py wins; static/ still works
+    return send_from_directory(base if os.path.exists(os.path.join(base, "index.html")) else os.path.join(base, "static"), "index.html")
 
 
 # ---------- info ----------
@@ -593,6 +594,83 @@ def job_zip(jid):
                 z.write(f["path"], f["name"])
         os.replace(tmp, zp)
     return send_file(zp, as_attachment=True, download_name="clips.zip")
+
+
+# ---------- timeline editor export: keep the chosen parts, join them into one video ----------
+def has_audio(path):
+    exe = shutil.which("ffprobe")
+    if not exe:
+        return True
+    try:
+        r = subprocess.run([exe, "-v", "error", "-select_streams", "a", "-show_entries", "stream=index",
+                            "-of", "csv=p=0", path], capture_output=True, text=True, timeout=20)
+        return bool(r.stdout.strip())
+    except Exception:
+        return True
+
+
+def run_edit(j, body, _q):
+    s = SOURCES.get(body["source"])
+    if not s or not os.path.exists(s["path"]):
+        raise ValueError("The source file expired. Please add it again.")
+    segs = body["segments"]
+    total = sum(b - a for a, b in segs)
+    aud = has_audio(s["path"])
+    cmd, flt = [FFMPEG, "-y"], []
+    for i, (a, b) in enumerate(segs):  # one fast-seeking input per part keeps picture and sound in sync
+        cmd += ["-ss", f"{a:.3f}", "-t", f"{b - a:.3f}", "-i", s["path"]]
+        flt.append(f"[{i}:v:0]setpts=PTS-STARTPTS[v{i}]")
+        if aud:
+            flt.append(f"[{i}:a:0]aresample=48000,asetpts=PTS-STARTPTS[a{i}]")
+    ins = "".join(f"[v{i}][a{i}]" if aud else f"[v{i}]" for i in range(len(segs)))
+    flt.append(f"{ins}concat=n={len(segs)}:v=1:a={1 if aud else 0}[v]" + ("[a]" if aud else ""))
+    base = os.path.splitext(s["name"])[0][:60] or "video"
+    out = os.path.join(j["dir"], f"{base}_edited.mp4")
+    cmd += ["-filter_complex", ";".join(flt), "-map", "[v]"] + (["-map", "[a]"] if aud else [])
+    cmd += ["-c:v", "libx264", "-preset", "veryfast", "-crf", "22", "-pix_fmt", "yuv420p"]
+    cmd += (["-c:a", "aac", "-b:a", "160k"] if aud else []) + ["-movflags", "+faststart", "-progress", "pipe:1", "-nostats", out]
+    j["status"] = "processing"
+    p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
+    for line in p.stdout:
+        if j["cancel"].is_set():
+            p.kill()
+            p.wait()
+            raise Cancelled
+        if line.startswith("out_time_us="):
+            try:
+                j["pct"] = min(99, int(line.split("=")[1]) / 1e6 / total * 100)
+            except (ValueError, ZeroDivisionError):
+                pass
+    p.wait()
+    if p.returncode or not os.path.exists(out) or os.path.getsize(out) == 0:
+        raise ValueError("The edited video could not be created.")
+    j["files"].append({"name": os.path.basename(out), "path": out, "size": os.path.getsize(out)})
+    j["pct"] = 100
+
+
+@app.post("/api/edit")
+def create_edit():
+    b = request.json or {}
+    if not FFMPEG:
+        return jsonify(error="Editing needs FFmpeg, which is not installed on this server."), 400
+    s = SOURCES.get(b.get("source"))
+    if not s or s["kind"] != "video":
+        return jsonify(error="The source file expired. Please add it again."), 400
+    try:
+        segs = []
+        for a, e in (b.get("segments") or [])[:100]:
+            a, e = float(a), float(e)
+            if a < 0 or e - a < 0.05 or (s.get("duration") and a >= s["duration"]):
+                raise ValueError
+            segs.append((a, e))
+        if not segs:
+            raise ValueError
+    except (ValueError, TypeError):
+        return jsonify(error="Check the edited timeline and try again."), 400
+    j = start_job(run_edit, {"source": s["id"], "segments": segs})
+    if not j:
+        return jsonify(error="Server is busy. Try again in a minute."), 429
+    return jsonify(id=j["id"])
 
 
 def janitor():

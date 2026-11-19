@@ -1,5 +1,5 @@
 """V-Downloader Pro - backend. Run: python app.py  (or gunicorn app:app)"""
-import base64, hashlib, hmac, ipaddress, os, re, shutil, socket, struct, subprocess, tempfile, threading, time, uuid, zipfile
+import base64, json, hashlib, hmac, ipaddress, os, re, shutil, socket, struct, subprocess, tempfile, threading, time, uuid, zipfile
 from datetime import timedelta
 from urllib.parse import urljoin, urlparse, unquote, quote
 
@@ -856,33 +856,15 @@ def png_size(b):
     return struct.unpack(">II", b[16:24])
 
 
-def run_text(j, body, _q):
-    s = SOURCES.get(body["source"])
-    if not s or not os.path.exists(s["path"]):
-        raise ValueError("The file expired. Please add it again.")
-    photo, rng = s["kind"] == "image", body.get("range")
-    secs = body.get("seconds") if photo else None
-    pimg = photo and not secs  # a still picture (no timing); a photo with seconds becomes a video
-    cmd = [FFMPEG, "-y"]
-    if secs:
-        cmd += ["-loop", "1", "-framerate", "25", "-t", f"{secs:.3f}", "-i", s["path"]]
-        total = float(secs)
-    elif rng and not photo:
-        cmd += ["-ss", f"{rng[0]:.3f}", "-t", f"{rng[1] - rng[0]:.3f}", "-i", s["path"]]
-        total = rng[1] - rng[0]
-    else:
-        cmd += ["-i", s["path"]]
-        total = s.get("duration") or 0
-    flt, prev = [], "0:v"
-    if secs:
-        flt.append("[0:v]scale=trunc(iw/2)*2:trunc(ih/2)*2,format=yuv420p[b0]")
-        prev = "b0"
-    for k, L in enumerate(body["layers"]):
-        pth = os.path.join(j["dir"], f"t{k}.png")
+def overlay_parts(j, layers, prev, pimg, tag=""):
+    """ffmpeg inputs + filters that lay each text picture over `prev` (main video is input 0)."""
+    inputs, flt = [], []
+    for k, L in enumerate(layers):
+        pth = os.path.join(j["dir"], f"t{tag}{k}.png")
         with open(pth, "wb") as f:
             f.write(L["png"])
         w, h = png_size(L["png"])
-        cmd += ["-i", pth] if pimg else ["-loop", "1", "-framerate", "25", "-i", pth]
+        inputs += ["-i", pth] if pimg else ["-loop", "1", "-framerate", "25", "-i", pth]
         X, Y, st, en, an, ad = L["x"], L["y"], L["start"], L["end"], L["anim"], L["animDur"]
         ch = f"[{k + 1}:v]format=rgba"
         xe, ye = str(X), str(Y)
@@ -901,23 +883,157 @@ def run_text(j, body, _q):
         en_expr = "" if pimg else f":enable='between(t,{st:.3f},{en:.3f})'"
         flt.append(f"[{prev}][t{k}]overlay=x={xe}:y={ye}{en_expr}:shortest=1[o{k}]")
         prev = f"o{k}"
-    base = os.path.splitext(s["name"])[0][:60] or "file"
-    cmd += ["-filter_complex", ";".join(flt), "-map", f"[{prev}]"]
-    j["status"] = "processing"
-    if pimg:
-        ext = ".png" if s["path"].lower().endswith(".png") else ".jpg"
-        out = os.path.join(j["dir"], f"{base}_text{ext}")
-        ok = ffrun(j, cmd + ["-frames:v", "1"] + ([] if ext == ".png" else ["-q:v", "2"]) + [out])
-    else:
+    return inputs, flt, prev
+
+
+# ---- smart text render: only the part of the video that has text is re-encoded, the rest is copied ----
+# (much faster, and the file stays about as small as the original). Falls back to the full render if anything looks off.
+def _probe_json(path, *args):
+    exe = shutil.which("ffprobe")
+    r = subprocess.run([exe, "-v", "error", *args, "-of", "json", path], capture_output=True, text=True, timeout=120)
+    return json.loads(r.stdout or "{}")
+
+
+def smart_info(path):
+    """Duration if the file is a plain H.264 4:2:0 MP4/MOV (safe to copy parts of), else None."""
+    if not shutil.which("ffprobe") or os.path.splitext(path)[1].lower() not in (".mp4", ".m4v", ".mov"):
+        return None
+    d = _probe_json(path, "-select_streams", "v:0", "-show_streams", "-show_format")
+    st = (d.get("streams") or [{}])[0]
+    if st.get("codec_name") != "h264" or st.get("pix_fmt") != "yuv420p" or st.get("side_data_list") or (st.get("tags") or {}).get("rotate"):
+        return None
+    return float(d["format"]["duration"])
+
+
+def vpackets(path):
+    r = subprocess.run([shutil.which("ffprobe"), "-v", "error", "-select_streams", "v:0", "-show_entries",
+                        "packet=pts_time,flags", "-of", "csv=p=0", path], capture_output=True, text=True, timeout=900)
+    pk = []
+    for line in r.stdout.splitlines():
+        a, _, fl = line.partition(",")
+        pk.append((float(a), "K" in fl))
+    pk.sort()
+    return pk
+
+
+def stream_durs(path):
+    d = _probe_json(path, "-show_entries", "stream=codec_type,duration")
+    return {x["codec_type"]: float(x.get("duration") or 0) for x in d.get("streams", [])}
+
+
+def smart_text(j, s, layers, base):
+    if os.environ.get("SMART_TEXT") == "0":
+        return None
+    try:
+        dur = smart_info(s["path"])
+        if not dur or not layers:
+            return None
+        pk = vpackets(s["path"])
+        if len(pk) < 30 or not pk[0][1]:
+            return None
+        times, keys = [t for t, _ in pk], [t for t, k in pk if k]
+        S = max(0.0, min(L["start"] for L in layers))
+        E = min(dur, max(L["end"] for L in layers))
+        if E <= S:
+            return None
+        A = max([t for t in keys if t <= S + 1e-3] or [0.0])
+        after = [t for t in keys if t >= E - 1e-3 and t > A + 1e-3]
+        B = after[0] if after else None
+        nh = sum(1 for t in times if t < A - 1e-4)
+        nm = sum(1 for t in times if t >= A - 1e-4 and (B is None or t < B - 1e-4))
+        if nm > 0.6 * len(times):
+            return None  # text covers most of the video: a full render is just as good
+        w = os.path.join(j["dir"], "sm_")
+        parts = []
+        src = s["path"]
+
+        def run(cmd):
+            if j["cancel"].is_set():
+                raise Cancelled
+            return subprocess.run(cmd, capture_output=True, timeout=3600).returncode == 0
+
+        if nh:
+            if not run([FFMPEG, "-v", "error", "-y", "-i", src, "-frames:v", str(nh), "-map", "0:v:0", "-an", "-c:v", "copy", w + "head.mp4"]):
+                return None
+            parts.append(w + "head.mp4")
+        shifted = [dict(L, start=L["start"] - A, end=L["end"] - A) for L in layers]
+        inputs, flt, prev = overlay_parts(j, shifted, "0:v", False, tag="s")
+        mid = [FFMPEG, "-y", "-ss", f"{A:.3f}", "-i", src] + inputs + ["-filter_complex", ";".join(flt), "-map", f"[{prev}]",
+               "-frames:v", str(nm), "-an", "-c:v", "libx264", "-preset", "veryfast", "-crf", "18", "-pix_fmt", "yuv420p",
+               "-fps_mode", "passthrough", w + "mid.mp4"]
+        j["status"] = "processing"
+        if not ffprogress(j, mid, (B if B else dur) - A):
+            return None
+        parts.append(w + "mid.mp4")
+        if B is not None:
+            if not run([FFMPEG, "-v", "error", "-y", "-ss", f"{B:.3f}", "-i", src, "-map", "0:v:0", "-an", "-c:v", "copy", w + "tail.mp4"]):
+                return None
+            parts.append(w + "tail.mp4")
+        with open(w + "list.txt", "w") as f:
+            f.write("".join(f"file '{p}'\n" for p in parts))
         out = os.path.join(j["dir"], f"{base}_text.mp4")
-        tail = venc() + ["-movflags", "+faststart"]
-        copyable = os.path.splitext(s["path"])[1].lower() in (".mp4", ".m4v", ".mov")
-        audios = ([["-c:a", "copy"]] if copyable else []) + [["-c:a", "aac", "-b:a", "192k"]]
-        ok = False
-        for audio in audios:  # copy the original sound when possible, else re-encode it
-            ok = ffprogress(j, cmd + ["-map", "0:a:0?"] + audio + tail + [out], total)
-            if ok:
-                break
+        if not run([FFMPEG, "-v", "error", "-y", "-f", "concat", "-safe", "0", "-i", w + "list.txt", "-i", src, "-map", "0:v:0",
+                    "-map", "1:a:0?", "-c", "copy", "-movflags", "+faststart", out]):
+            return None
+        # safety checks: same number of frames, same lengths, joins decode cleanly, otherwise use the full render
+        if len(vpackets(out)) != len(pk):
+            return None
+        a, b = stream_durs(src), stream_durs(out)
+        if any(abs(a.get(k, 0) - b.get(k, 0)) > 0.1 for k in set(a) | set(b)):
+            return None
+        for t in [A] + ([B] if B is not None else []):
+            if t > 0 and subprocess.run([FFMPEG, "-v", "error", "-ss", f"{max(0, t - 1):.3f}", "-t", "2", "-i", out, "-f", "null", "-"],
+                                        capture_output=True, text=True, timeout=300).stderr.strip():
+                return None
+        j["smart"] = True
+        return out
+    except Cancelled:
+        raise
+    except Exception:
+        return None
+
+
+def run_text(j, body, _q):
+    s = SOURCES.get(body["source"])
+    if not s or not os.path.exists(s["path"]):
+        raise ValueError("The file expired. Please add it again.")
+    photo, rng = s["kind"] == "image", body.get("range")
+    secs = body.get("seconds") if photo else None
+    pimg = photo and not secs  # a still picture (no timing); a photo with seconds becomes a video
+    base = os.path.splitext(s["name"])[0][:60] or "file"
+    out = smart_text(j, s, body["layers"], base) if (not photo and not rng) else None
+    ok = bool(out)
+    if not ok:
+        cmd = [FFMPEG, "-y"]
+        if secs:
+            cmd += ["-loop", "1", "-framerate", "25", "-t", f"{secs:.3f}", "-i", s["path"]]
+            total = float(secs)
+        elif rng and not photo:
+            cmd += ["-ss", f"{rng[0]:.3f}", "-t", f"{rng[1] - rng[0]:.3f}", "-i", s["path"]]
+            total = rng[1] - rng[0]
+        else:
+            cmd += ["-i", s["path"]]
+            total = s.get("duration") or 0
+        flt, prev = [], "0:v"
+        if secs:
+            flt.append("[0:v]scale=trunc(iw/2)*2:trunc(ih/2)*2,format=yuv420p[b0]")
+            prev = "b0"
+        inputs, more, prev = overlay_parts(j, body["layers"], prev, pimg)
+        cmd += inputs + ["-filter_complex", ";".join(flt + more), "-map", f"[{prev}]"]
+        j["status"] = "processing"
+        if pimg:
+            ext = ".png" if s["path"].lower().endswith(".png") else ".jpg"
+            out = os.path.join(j["dir"], f"{base}_text{ext}")
+            ok = ffrun(j, cmd + ["-frames:v", "1"] + ([] if ext == ".png" else ["-q:v", "2"]) + [out])
+        else:
+            out = os.path.join(j["dir"], f"{base}_text.mp4")
+            tail = venc() + ["-movflags", "+faststart"]
+            copyable = os.path.splitext(s["path"])[1].lower() in (".mp4", ".m4v", ".mov")
+            audios = ([["-c:a", "copy"]] if copyable else []) + [["-c:a", "aac", "-b:a", "192k"]]
+            for audio in audios:  # copy the original sound when possible, else re-encode it
+                ok = ffprogress(j, cmd + ["-map", "0:a:0?"] + audio + tail + [out], total)
+                if ok:
+                    break
     if not ok or not os.path.exists(out) or os.path.getsize(out) == 0:
         raise ValueError("The text could not be added to this file.")
     if body.get("as") == "clip":  # result goes back to the Clip section as a ready clip

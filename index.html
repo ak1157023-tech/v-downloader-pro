@@ -365,13 +365,37 @@ main{padding-bottom:70px!important}
 .tool.pk .go-ar{color:#FFC1D9}
 .back{display:inline-flex;align-items:center;gap:6px;margin:0 0 18px;padding:8px 16px;border:1px solid var(--line);border-radius:999px;background:var(--panel);color:var(--ink);text-decoration:none;font-weight:600;font-size:.9rem;transition:.2s}
 .back:hover{border-color:#64FFDA;color:#64FFDA}
+
+/* ===== Compact home cards ===== */
+.hub{grid-template-columns:repeat(auto-fill,minmax(210px,1fr))!important;gap:14px!important}
+.tool{flex-direction:row!important;align-items:center;gap:14px!important;padding:16px 18px!important;border-radius:18px!important}
+.tool .ti{width:40px!important;height:40px!important;border-radius:12px!important;flex:none;background:#FFD1661f!important;border:1px solid #FFD16666!important;color:#FFD166!important}
+.tool:hover .ti{background:#FFD166!important;color:#0A192F!important}
+.tool .ti svg{width:20px!important;height:20px!important}
+.tool b{font-size:1rem!important;flex:1}
+.tool .go-ar{color:#FFD166!important;font-size:.85rem!important}
+.tool:hover{border-color:#FFD166!important;box-shadow:0 14px 36px #FFD1661f!important}
+.tool.pk .ti{background:#FFC1D91f!important;border-color:#FFC1D966!important;color:#FFC1D9!important}
+.tool.pk:hover .ti{background:#FFC1D9!important;color:#0A192F!important}
+.tool.pk:hover{border-color:#FFC1D9!important;box-shadow:0 14px 36px #FFC1D91f!important}
+.tool.pk .go-ar{color:#FFC1D9!important}
+
+/* ===== Mobile: Home + Download History bar at the TOP ===== */
+@media(max-width:860px){
+ .side{position:sticky!important;top:0!important;bottom:auto!important;inset:0 0 auto 0!important;border-top:0!important;border-bottom:1px solid #2A4066;padding:calc(8px + env(safe-area-inset-top)) 10px 8px!important;z-index:60}
+ .side nav{justify-content:center!important;gap:8px!important}
+ .side nav button{flex:1!important;flex-direction:row!important;gap:8px!important;padding:9px 10px!important;border-radius:12px!important;font-size:.85rem!important;background:#0F2039!important}
+ .side nav button .ic{width:auto!important;height:auto!important}
+ .side nav button.on{background:#64FFDA1f!important;color:#64FFDA!important}
+ main{padding-bottom:70px!important}
+}
 </style>
 </head>
 <body>
 <aside class="side">
   <div class="brand"><div class="logo"><svg width="38" height="38" viewBox="0 0 32 32" aria-hidden="true"><path d="M8 6.5 25.5 16 8 25.5z" fill="#E6F1FF" stroke="#E6F1FF" stroke-width="3.2" stroke-linejoin="round"/><path d="M13.2 12.2 19 16l-5.8 3.8z" fill="#172A45"/></svg></div>Clipecut</div>
   <div class="nlabel">Menu</div>
-  <nav aria-label="Main"><button data-v="home" class="on"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg></span><span class="nm">Home</span></button></nav>
+  <nav aria-label="Main"><button data-v="home" class="on"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg></span><span class="nm">Home</span></button><button data-v="history"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/></svg></span><span class="nm">Download History</span></button></nav>
   <div class="sbot">
     <button class="sdots" id="sdots" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="More options"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></button>
     <div class="smenu" id="smenu" role="menu" hidden>
@@ -385,12 +409,11 @@ main{padding-bottom:70px!important}
   <h1>Welcome to <span>Clipecut</span></h1>
   <p class="sub">Everything you need for your videos in one place. Pick a tool to get started.</p>
   <div class="hub">
-    <a class="tool" href="#downloader"><span class="ti"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M4 20h16"/></svg></span><b>URL Downloader</b><small>Paste a video link, pick the quality and download it.</small><i class="go-ar">Open &rarr;</i></a>
-    <a class="tool" href="#export"><span class="ti"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 4v16M17 4v16M3 9h4M3 15h4M17 9h4M17 15h4"/></svg></span><b>Export</b><small>Cut a video on the timeline, delete parts and export it.</small><i class="go-ar">Open &rarr;</i></a>
-    <a class="tool" href="#clip"><span class="ti"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M20 4 8.1 15.9M14.5 14.5 20 20M8.1 8.1 12 12"/></svg></span><b>Clip</b><small>Make clips from a video or turn a photo into a video.</small><i class="go-ar">Open &rarr;</i></a>
-    <a class="tool" href="#text"><span class="ti"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7V5h16v2M9 20h6M12 5v15"/></svg></span><b>Text</b><small>Place styled and animated text on a video or photo.</small><i class="go-ar">Open &rarr;</i></a>
-    <a class="tool pk" href="#shorts"><span class="ti"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg></span><b>Best Shorts AI</b><small>AI finds the best moments of a long video and cuts shorts.</small><i class="go-ar">Open &rarr;</i></a>
-    <a class="tool" href="#history"><span class="ti"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/></svg></span><b>Download History</b><small>See everything you downloaded, made or exported.</small><i class="go-ar">Open &rarr;</i></a>
+    <a class="tool" href="#downloader"><span class="ti"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M4 20h16"/></svg></span><b>URL Downloader</b><i class="go-ar">Open &rarr;</i></a>
+    <a class="tool" href="#export"><span class="ti"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 4v16M17 4v16M3 9h4M3 15h4M17 9h4M17 15h4"/></svg></span><b>Export</b><i class="go-ar">Open &rarr;</i></a>
+    <a class="tool" href="#clip"><span class="ti"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M20 4 8.1 15.9M14.5 14.5 20 20M8.1 8.1 12 12"/></svg></span><b>Clip</b><i class="go-ar">Open &rarr;</i></a>
+    <a class="tool" href="#text"><span class="ti"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7V5h16v2M9 20h6M12 5v15"/></svg></span><b>Text</b><i class="go-ar">Open &rarr;</i></a>
+    <a class="tool pk" href="#shorts"><span class="ti"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg></span><b>Best Shorts AI</b><i class="go-ar">Open &rarr;</i></a>
   </div>
 </section>
 

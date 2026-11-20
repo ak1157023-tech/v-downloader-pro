@@ -1,4 +1,4 @@
-"""V-Downloader Pro - backend. Run: python app.py  (or gunicorn app:app)"""
+"""Clipecut - backend. Run: python app.py  (or gunicorn app:app)"""
 import base64, json, hashlib, hmac, ipaddress, os, re, shutil, socket, struct, subprocess, tempfile, threading, time, uuid, zipfile
 from datetime import timedelta
 from urllib.parse import urljoin, urlparse, unquote, quote
@@ -24,7 +24,7 @@ POS = {"tl": "x=24:y=24", "tr": "x=w-tw-24:y=24", "bl": "x=24:y=h-th-24", "br": 
 TIERS = {"480": 480, "720": 720, "1080": 1080, "2k": 1440, "4k": 2160}
 LABELS = {"480": "480p", "720": "720p", "1080": "1080p", "2k": "2K", "4k": "4K"}
 EXT = {".mp4", ".webm", ".mkv", ".mov", ".m4v", ".avi", ".mp3", ".m4a", ".ogg", ".wav", ".flac"}
-UA = {"User-Agent": "Mozilla/5.0 V-Downloader-Pro"}
+UA = {"User-Agent": "Mozilla/5.0 Clipecut"}
 JOBS, HITS = {}, {}
 
 app = Flask(__name__, static_folder="static")
@@ -37,15 +37,15 @@ app.permanent_session_lifetime = timedelta(days=30)
 app.config.update(SESSION_COOKIE_SAMESITE="Lax", SESSION_COOKIE_SECURE=bool(os.environ.get("RENDER")))
 FAILS = {}
 LOGIN_PAGE = """<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1"><title>V-Downloader Pro - Login</title>
-<style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#060a16;color:#e8eefc;font-family:"Segoe UI",system-ui,sans-serif}
-form{width:min(92vw,380px);background:#0d1426;border:1px solid #1f2b4a;border-radius:22px;padding:28px}
-h1{margin:0 0 6px;font-size:1.5rem}p{margin:0 0 18px;color:#8b9bc2}
-input{width:100%;box-sizing:border-box;padding:14px;border-radius:12px;border:2px solid #1f2b4a;background:#121b33;color:#e8eefc;font:inherit;font-size:1rem}
-input:focus{outline:none;border-color:#3b82f6}
-button{width:100%;margin-top:14px;padding:14px;border:0;border-radius:12px;background:linear-gradient(135deg,#1d4ed8,#3b82f6 55%,#38bdf8);color:#fff;font:inherit;font-weight:700;font-size:1rem;cursor:pointer}
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>Clipecut - Login</title>
+<style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#0A192F;color:#E6F1FF;font-family:"Segoe UI",system-ui,sans-serif}
+form{width:min(92vw,380px);background:#172A45;border:1px solid #2A4066;border-radius:22px;padding:28px}
+h1{margin:0 0 6px;font-size:1.5rem}p{margin:0 0 18px;color:#8892B0}
+input{width:100%;box-sizing:border-box;padding:14px;border-radius:12px;border:2px solid #2A4066;background:#0F2039;color:#E6F1FF;font:inherit;font-size:1rem}
+input:focus{outline:none;border-color:#64FFDA}
+button{width:100%;margin-top:14px;padding:14px;border:0;border-radius:12px;background:#64FFDA;color:#0A192F;font:inherit;font-weight:700;font-size:1rem;cursor:pointer}
 .e{color:#f87171;min-height:22px;margin-top:10px}</style></head><body>
-<form method="post"><h1>V-Downloader Pro</h1><p>Enter the password to continue.</p>
+<form method="post"><h1>Clipecut</h1><p>Enter the password to continue.</p>
 <input type="password" name="password" placeholder="Password" autofocus autocomplete="current-password">
 <button type="submit">Log in</button><div class="e">__ERR__</div></form></body></html>"""
 
@@ -90,19 +90,17 @@ def logout():
 # ---------- installable web app (PWA) + Google Search Console file ----------
 @app.get("/manifest.json")
 def manifest():
-    return jsonify(name="V-Downloader Pro", short_name="V-Downloader", start_url="/", scope="/",
-                   display="standalone", background_color="#060a16", theme_color="#060a16",
+    return jsonify(name="Clipecut", short_name="Clipecut", start_url="/", scope="/",
+                   display="standalone", background_color="#0A192F", theme_color="#0A192F",
                    icons=[{"src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any"}])
 
 
 @app.get("/icon.svg")
 def icon():
     svg = ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">'
-           '<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">'
-           '<stop offset="0" stop-color="#1d4ed8"/><stop offset="1" stop-color="#38bdf8"/></linearGradient></defs>'
-           '<rect width="512" height="512" rx="110" fill="url(#g)"/>'
-           '<path d="M256 110v190m0 0l-80-80m80 80l80-80M140 380h232" stroke="#fff" stroke-width="40" '
-           'stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>')
+           '<rect width="512" height="512" rx="112" fill="#0A192F"/>'
+           '<path d="M168 130 392 256 168 382z" fill="#64FFDA" stroke="#64FFDA" stroke-width="44" stroke-linejoin="round"/>'
+           '<path d="M232 206 316 256 232 306z" fill="#0A192F"/></svg>')
     return Response(svg, mimetype="image/svg+xml")
 
 
@@ -396,7 +394,7 @@ def start_job(fn, arg, q=None, keep=False, wm=None):
         return None
     j = {"id": uuid.uuid4().hex, "status": "queued", "pct": 0, "error": None, "path": None, "name": None,
          "cancel": threading.Event(), "t": time.time(), "dir": tempfile.mkdtemp(prefix="vdp_"),
-         "keep": keep, "source": None, "files": [], "wm": wm}
+         "keep": keep, "source": None, "files": [], "wm": wm, "phase": None}
     JOBS[j["id"]] = j
     threading.Thread(target=worker, args=(j, fn, arg, q), daemon=True).start()
     return j
@@ -428,8 +426,10 @@ def job_status(jid):
     j = JOBS.get(jid)
     if not j:
         return jsonify(error="Job not found."), 404
-    return jsonify(status=j["status"], pct=round(j["pct"], 1), error=j["error"], source=j["source"],
-                   files=[{"i": i, "name": f["name"], "size": f["size"]} for i, f in enumerate(j["files"])])
+    return jsonify(status=j["status"], pct=round(j["pct"], 1), error=j["error"], source=j["source"], phase=j.get("phase"),
+                   files=[{"i": i, "name": f["name"], "size": f["size"], "thumb": "thumb" in f,
+                           **{k: f[k] for k in ("start", "end", "label", "score") if k in f}}
+                          for i, f in enumerate(j["files"])])
 
 
 @app.delete("/api/jobs/<jid>")
@@ -761,7 +761,16 @@ def job_clip_file(jid, i):
     j = JOBS.get(jid)
     if not j or j["status"] != "ready" or not 0 <= i < len(j["files"]):
         return jsonify(error="File is not ready."), 404
-    return send_file(j["files"][i]["path"], as_attachment=True, download_name=j["files"][i]["name"])
+    inline = request.args.get("inline") == "1"  # inline = play in the page, otherwise download
+    return send_file(j["files"][i]["path"], as_attachment=not inline, download_name=j["files"][i]["name"], conditional=True)
+
+
+@app.get("/api/jobs/<jid>/thumb/<int:i>")
+def job_thumb(jid, i):
+    j = JOBS.get(jid)
+    if not j or j["status"] != "ready" or not 0 <= i < len(j["files"]) or "thumb" not in j["files"][i]:
+        return jsonify(error="Not found."), 404
+    return send_file(j["files"][i]["thumb"], mimetype="image/jpeg")
 
 
 @app.get("/api/jobs/<jid>/zip")
@@ -1080,6 +1089,172 @@ def create_text():
     as_clip = b.get("as") == "clip"
     j = start_job(run_text, {"source": s["id"], "layers": layers, "range": rng, "seconds": secs, "as": "clip" if as_clip else None},
                   keep=as_clip)
+    if not j:
+        return jsonify(error="Server is busy. Try again in a minute."), 429
+    return jsonify(id=j["id"])
+
+
+# ---------- Best Shorts AI: find the strongest moments of a long video and cut them into shorts ----------
+# The engine listens to the sound (loudness) and watches the picture (how much it changes) for every second,
+# scores every window of the chosen length, and keeps the best ones that do not overlap. It needs only FFmpeg.
+def scan(j, cmd, dur, lo, hi, handle):
+    """Run ffmpeg and feed each output line to `handle` (returns the time reached, for progress). Cancel-aware."""
+    p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
+    for line in p.stdout:
+        if j["cancel"].is_set():
+            p.kill()
+            p.wait()
+            raise Cancelled
+        t = handle(line)
+        if t is not None and dur:
+            j["pct"] = lo + (hi - lo) * min(1.0, t / dur)
+    p.wait()
+    return p.returncode == 0
+
+
+def per_second(j, cmd, dur, lo, hi, key, default):
+    """One number per second of the video, read from ffmpeg's metadata printout."""
+    n = int(dur) + 1
+    vals, cur = [None] * n, {"t": 0.0}
+
+    def handle(line):
+        if line.startswith("frame:"):
+            m = re.search(r"pts_time:([\d.]+)", line)
+            if m:
+                cur["t"] = float(m.group(1))
+            return cur["t"]
+        if line.startswith(key + "="):
+            try:
+                v = float(line.split("=", 1)[1])
+            except ValueError:
+                v = default
+            if v != v or v < -90:  # NaN or -inf (silence)
+                v = default
+            i = min(n - 1, max(0, int(cur["t"])))
+            vals[i] = v if vals[i] is None else max(vals[i], v)
+        return None
+
+    ok = scan(j, cmd, dur, lo, hi, handle)
+    return [default if v is None else v for v in vals], ok
+
+
+def norm(v):
+    """Scale to 0..1 using the video's own quiet (10%) and loud (95%) levels, so any video works."""
+    s = sorted(v)
+    if not s:
+        return v
+    lo, hi = s[int(len(s) * 0.10)], s[min(len(s) - 1, int(len(s) * 0.95))]
+    if hi - lo < 1e-9:
+        return [0.0] * len(v)
+    return [min(1.0, max(0.0, (x - lo) / (hi - lo))) for x in v]
+
+
+def best_windows(a, m, dur, L, count):
+    """Top `count` non-overlapping windows of L seconds. Returns [(score, start)]."""
+    ps_a, ps_m = [0.0], [0.0]
+    for x in a:
+        ps_a.append(ps_a[-1] + x)
+    for x in m:
+        ps_m.append(ps_m[-1] + x)
+    cand = []
+    for t in range(0, max(0, int(dur) - L) + 1):
+        ma, mm = (ps_a[t + L] - ps_a[t]) / L, (ps_m[t + L] - ps_m[t]) / L
+        cand.append((0.5 * ma + 0.2 * max(a[t:t + L]) + 0.3 * mm, t))
+    cand.sort(reverse=True)
+    out = []
+    for sc, t in cand:
+        if all(t >= u + L or t + L <= u for _, u in out):
+            out.append((sc, t))
+        if len(out) >= count:
+            break
+    return out
+
+
+def moment_label(a, m, t, L):
+    seg_a, seg_m = a[t:t + L], m[t:t + L]
+    ma, mm = sum(seg_a) / L, sum(seg_m) / L
+    sd = (sum((x - ma) ** 2 for x in seg_a) / L) ** 0.5
+    if mm > 0.6:
+        return "Action Highlight"
+    if ma > 0.55 and sd < 0.2 and mm < 0.4:
+        return "Best Conversation"
+    if max(seg_a) - ma > 0.35:
+        return "Energy Peak"
+    return "Interesting Moment"
+
+
+def run_shorts(j, body, _q):
+    s = SOURCES.get(body["source"])
+    if not s or not os.path.exists(s["path"]):
+        raise ValueError("The source file expired. Please add it again.")
+    dur = s.get("duration") or 0
+    if dur < 10:
+        raise ValueError("Best Shorts needs a video that is at least 10 seconds long.")
+    L = max(5, min(int(body["length"]), int(dur)))
+    count = max(1, min(body["count"], int(dur // L)))
+    path = s["path"]
+    j["status"] = "processing"
+
+    j["phase"] = "Listening to the sound"
+    if has_audio(path):
+        a, _ok = per_second(j, [FFMPEG, "-v", "error", "-nostats", "-i", path, "-vn", "-af",
+                                "aformat=channel_layouts=mono,aresample=8000,asetnsamples=n=8000:p=0,"
+                                "astats=metadata=1:reset=1,ametadata=print:key=lavfi.astats.Overall.RMS_level:file=-",
+                                "-f", "null", "-"], dur, 0, 35, "lavfi.astats.Overall.RMS_level", -90.0)
+    else:
+        a = [-90.0] * (int(dur) + 1)
+    j["phase"] = "Watching the scenes"
+    m, _ok = per_second(j, [FFMPEG, "-v", "error", "-nostats"] + (["-skip_frame", "nokey"] if dur > 1800 else []) +
+                        ["-i", path, "-an", "-vf",
+                         "fps=2,scale=224:-2,select='gte(scene,0)',metadata=print:key=lavfi.scene_score:file=-",
+                         "-f", "null", "-"], dur, 35, 70, "lavfi.scene_score", 0.0)
+
+    j["phase"] = "Choosing the best moments"
+    an, mn = norm(a), norm(m)
+    if not any(an) and not any(mn):
+        raise ValueError("Could not find any moments in this video.")
+    picks = best_windows(an, mn, dur, L, count)
+    if not picks:
+        raise ValueError("Could not find any moments in this video.")
+    top = max(sc for sc, _ in picks) or 1.0
+    base = os.path.splitext(s["name"])[0][:60] or "video"
+    vf = ["-vf", "crop=min(iw\\,trunc(ih*9/16/2)*2):ih,scale=720:1280:force_original_aspect_ratio=increase,crop=720:1280,setsar=1"] \
+        if body.get("vertical") else []
+    for n, (sc, t) in enumerate(picks, 1):
+        j["phase"] = f"Creating short {n} of {len(picks)}"
+        j["pct"] = 70 + 30 * (n - 1) / len(picks)
+        out = os.path.join(j["dir"], f"{base}_short{n}.mp4")
+        cmd = [FFMPEG, "-y", "-ss", f"{t:.3f}", "-i", path, "-t", f"{L:.3f}", "-map", "0:v:0?", "-map", "0:a:0?"] + vf + \
+              venc() + ["-c:a", "aac", "-b:a", "160k", "-movflags", "+faststart", out]
+        if not ffrun(j, cmd) or not os.path.exists(out) or os.path.getsize(out) == 0:
+            raise ValueError(f"Short {n} could not be created.")
+        thumb = os.path.join(j["dir"], f"thumb{n}.jpg")
+        has_thumb = ffrun(j, [FFMPEG, "-y", "-ss", f"{min(1.0, L / 2):.2f}", "-i", out, "-frames:v", "1",
+                              "-vf", "scale=480:-2", "-q:v", "4", thumb]) and os.path.exists(thumb)
+        f = {"name": os.path.basename(out), "path": out, "size": os.path.getsize(out), "start": float(t),
+             "end": float(t + L), "label": moment_label(an, mn, t, L), "score": int(round(min(1.0, sc / top) * 100))}
+        if has_thumb:
+            f["thumb"] = thumb
+        j["files"].append(f)
+    j["phase"] = "Done"
+    j["pct"] = 100
+
+
+@app.post("/api/shorts")
+def create_shorts():
+    b = request.json or {}
+    if not FFMPEG:
+        return jsonify(error="Best Shorts needs FFmpeg, which is not installed on this server."), 400
+    s = SOURCES.get(b.get("source"))
+    if not s or s["kind"] != "video":
+        return jsonify(error="The source file expired. Please add it again."), 400
+    try:
+        count, length = int(b.get("count") or 5), int(b.get("length") or 30)
+        if not 1 <= count <= 10 or not 10 <= length <= 90:
+            raise ValueError
+    except (ValueError, TypeError):
+        return jsonify(error="Check the number of shorts and the length."), 400
+    j = start_job(run_shorts, {"source": s["id"], "count": count, "length": length, "vertical": bool(b.get("vertical"))})
     if not j:
         return jsonify(error="Server is busy. Try again in a minute."), 429
     return jsonify(id=j["id"])

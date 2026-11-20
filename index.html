@@ -297,13 +297,60 @@ main{padding-bottom:110px}
  .sbot{margin:14px 20px 0;border-top:1px solid #1D3150}
  .sdots{background:none;border-color:#1D3150;color:#8892B0}
 }
+
+/* ===== Layout fix (desktop): flex container, fixed 240px sidebar, always visible ===== */
+@media(min-width:861px){
+ html,body{min-height:100vh}
+ body{display:flex!important;flex-direction:row;align-items:stretch;min-height:100vh;width:100%}
+ .side{display:flex!important;flex-direction:column;visibility:visible!important;opacity:1!important;transform:none!important;
+  position:sticky;top:0;align-self:flex-start;flex:0 0 240px;width:240px;min-width:240px;max-width:240px;height:100vh;z-index:50;overflow:visible}
+ .side nav{overflow-y:auto;overflow-x:hidden;min-height:0}
+ main{flex:1 1 auto;min-width:0;width:auto;max-width:1060px;margin:0 auto}
+ .pager{left:calc(240px + (100vw - 240px) / 2)}
+}
+
+/* ===== Best Shorts AI: black + white + baby pink ===== */
+#shorts{--pk:#FFC1D9;--pk2:#FF9EC4;--bk:#0B0B0F;--bk2:#15151B;--bl:#2A2A34}
+#shorts h1 span{background:none;-webkit-text-fill-color:initial;color:var(--pk)}
+#shorts .card{background:var(--bk);border-color:var(--bl)}
+#shorts .btn.pri{background:var(--pk);color:var(--bk)}
+#shorts .btn.pri:hover{box-shadow:0 8px 24px #FFC1D93d}
+#shorts .btn.ghost{background:var(--bk2);color:#fff}
+#shorts .field,#shorts .pg{background:var(--bk2);border-color:var(--bl)}
+#shorts .bar{background:var(--bk2)}
+#shorts .bar i{background:linear-gradient(90deg,var(--pk2),var(--pk),#fff)}
+#shorts .chip{background:var(--bk2);border-color:var(--bl)}
+#shpv{display:block;width:100%;max-height:380px;border-radius:14px;background:#000;object-fit:contain}
+.aibox{display:flex;align-items:center;gap:14px;margin-top:16px;padding:14px 16px;border:1px solid #FFC1D955;border-radius:16px;background:linear-gradient(90deg,#FFC1D914,transparent)}
+.aibox b{display:block}.aibox small{color:var(--mut)}
+.orb{width:44px;height:44px;border-radius:50%;flex:none;background:radial-gradient(circle at 30% 30%,#fff,#FFC1D9 45%,#7a3b55);animation:orb 1.4s ease-in-out infinite}
+@keyframes orb{0%,100%{transform:scale(.88);box-shadow:0 0 0 0 #FFC1D966}50%{transform:scale(1.05);box-shadow:0 0 0 14px #FFC1D900}}
+.shhead{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.shgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px}
+.shgrid.v{grid-template-columns:repeat(auto-fill,minmax(190px,1fr))}
+.shc{background:var(--bk2);border:1px solid var(--bl);border-radius:20px;overflow:hidden;display:flex;flex-direction:column;transition:.25s;animation:in .4s ease both}
+.shc:hover{transform:translateY(-3px);border-color:#FFC1D9}
+.shth{position:relative;aspect-ratio:16/9;background:#000;cursor:pointer}
+.shgrid.v .shth{aspect-ratio:9/16}
+.shth img,.shth video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#000}
+.shth video{object-fit:contain}
+.shplay{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:54px;height:54px;border-radius:50%;border:0;background:#FFC1D9;color:#0B0B0F;font-size:1.3rem;cursor:pointer;display:grid;place-items:center;box-shadow:0 8px 24px #0009;transition:.2s}
+.shplay:hover{transform:translate(-50%,-50%) scale(1.08)}
+.shrank,.shdur{position:absolute;background:#000b;color:#fff;font-size:.75rem;font-weight:700;padding:3px 10px;border-radius:99px}
+.shrank{left:10px;top:10px}.shdur{right:10px;bottom:10px}
+.shb{padding:14px;display:grid;gap:10px}
+.shlab{justify-self:start;background:#FFC1D91f;color:#FFC1D9;border:1px solid #FFC1D955;border-radius:99px;font-size:.78rem;font-weight:700;padding:3px 12px}
+.shts{color:#fff;font-variant-numeric:tabular-nums;font-weight:600}
+.shsc{display:flex;align-items:center;gap:8px;color:var(--mut);font-size:.78rem}
+.shsc span{flex:1;height:6px;border-radius:99px;background:#0B0B0F;overflow:hidden}.shsc i{display:block;height:100%;background:#FFC1D9;border-radius:99px}
+.shb .btn{text-align:center}
 </style>
 </head>
 <body>
 <aside class="side">
   <div class="brand"><div class="logo"><svg width="38" height="38" viewBox="0 0 32 32" aria-hidden="true"><path d="M8 6.5 25.5 16 8 25.5z" fill="#E6F1FF" stroke="#E6F1FF" stroke-width="3.2" stroke-linejoin="round"/><path d="M13.2 12.2 19 16l-5.8 3.8z" fill="#172A45"/></svg></div>Clipecut</div>
   <div class="nlabel">Menu</div>
-  <nav aria-label="Main"><button data-v="home" class="on"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg></span><span class="nm">Home</span><span class="nk">1</span></button><button data-v="export"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 4v16M17 4v16M3 9h4M3 15h4M17 9h4M17 15h4"/></svg></span><span class="nm">Export</span><span class="nk">2</span></button><button data-v="clip"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M20 4 8.1 15.9M14.5 14.5 20 20M8.1 8.1 12 12"/></svg></span><span class="nm">Clip</span><span class="nk">3</span></button><button data-v="text"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7V5h16v2M9 20h6M12 5v15"/></svg></span><span class="nm">Text</span><span class="nk">4</span></button><button data-v="history"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/></svg></span><span class="nm">Download History</span><span class="nk">5</span></button></nav>
+  <nav aria-label="Main"><button data-v="home" class="on"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg></span><span class="nm">Home</span><span class="nk">1</span></button><button data-v="export"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 4v16M17 4v16M3 9h4M3 15h4M17 9h4M17 15h4"/></svg></span><span class="nm">Export</span><span class="nk">2</span></button><button data-v="clip"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M20 4 8.1 15.9M14.5 14.5 20 20M8.1 8.1 12 12"/></svg></span><span class="nm">Clip</span><span class="nk">3</span></button><button data-v="text"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7V5h16v2M9 20h6M12 5v15"/></svg></span><span class="nm">Text</span><span class="nk">4</span></button><button data-v="shorts"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg></span><span class="nm">Best Shorts</span><span class="nk">5</span></button><button data-v="history"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/></svg></span><span class="nm">Download History</span><span class="nk">6</span></button></nav>
   <div class="sbot">
     <button class="sdots" id="sdots" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="More options"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></button>
     <div class="smenu" id="smenu" role="menu" hidden>
@@ -479,12 +526,43 @@ main{padding-bottom:110px}
   </div>
 </section>
 
+<section id="shorts" hidden>
+  <h1>Best <span>Shorts AI</span></h1>
+  <p class="sub">Add one long video. Clipecut listens to it, watches it, finds the strongest moments and cuts them into ready-to-share shorts. Max size: <b class="lim">2 GB</b>.</p>
+  <div id="shsrc"></div>
+  <div class="card" id="shw" hidden>
+    <div class="top" style="display:block">
+      <video id="shpv" controls playsinline preload="metadata"></video>
+      <p id="shtitle" style="font-size:1.1rem;font-weight:700;margin:12px 0 8px;overflow-wrap:anywhere"></p>
+      <div class="chips" id="shchips"></div>
+    </div>
+    <div class="sec">
+      <h3>AI settings</h3>
+      <div class="fr">
+        <label for="shcount">Shorts</label>
+        <select class="field" id="shcount"><option value="3">3</option><option value="5" selected>5</option><option value="8">8</option></select>
+        <label for="shlen">Length</label>
+        <select class="field" id="shlen"><option value="15">15 sec</option><option value="30" selected>30 sec</option><option value="45">45 sec</option><option value="60">60 sec</option></select>
+        <label for="shfmt">Format</label>
+        <select class="field" id="shfmt"><option value="o">Original shape</option><option value="v">Vertical 9:16 (Shorts / Reels)</option></select>
+      </div>
+      <button class="btn pri go" id="shGo" type="button" disabled>ANALYZE VIDEO WITH AI</button>
+      <div class="aibox" id="shai" hidden><div class="orb"></div><div><b>AI is working on your video</b><small id="shaitxt">Starting…</small></div></div>
+    </div>
+    <div class="sec" id="shres" hidden>
+      <div class="shhead"><h3 id="shcnt" style="margin:0"></h3><a class="btn pri sm" id="shzip">Download all</a></div>
+      <div class="shgrid" id="shgrid"></div>
+      <p class="note">Files stay on the server for about 30 minutes. Download the shorts you like.</p>
+    </div>
+  </div>
+</section>
+
 <section id="history" hidden>
   <div class="head"><h2>Download History</h2><button class="btn ghost" id="clear">Clear history</button></div>
   <div class="hist" id="hist"></div>
 </section>
 
-<div class="pager" role="navigation" aria-label="Slides"><button id="pgPrev" type="button" aria-label="Previous slide">&#8249;</button><span class="dots"><button class="dot" type="button" aria-label="Home" title="Home"></button><button class="dot" type="button" aria-label="Export" title="Export"></button><button class="dot" type="button" aria-label="Clip" title="Clip"></button><button class="dot" type="button" aria-label="Text" title="Text"></button><button class="dot" type="button" aria-label="Download History" title="Download History"></button></span><button id="pgNext" type="button" aria-label="Next slide">&#8250;</button></div>
+<div class="pager" role="navigation" aria-label="Slides"><button id="pgPrev" type="button" aria-label="Previous slide">&#8249;</button><span class="dots"><button class="dot" type="button" aria-label="Home" title="Home"></button><button class="dot" type="button" aria-label="Export" title="Export"></button><button class="dot" type="button" aria-label="Clip" title="Clip"></button><button class="dot" type="button" aria-label="Text" title="Text"></button><button class="dot" type="button" aria-label="Best Shorts" title="Best Shorts"></button><button class="dot" type="button" aria-label="Download History" title="Download History"></button></span><button id="pgNext" type="button" aria-label="Next slide">&#8250;</button></div>
 </main>
 
 <script>
@@ -496,7 +574,7 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 async function api(p,o){const r=await fetch(p,o);if(!r.ok){let m="Request failed.";try{m=(await r.json()).error||m}catch{}throw new Error(m)}return r}
 
 /* navigation */
-const SLIDES=["home","export","clip","text","history"],SLIDE_NAMES={home:"Home",export:"Export",clip:"Clip",text:"Text",history:"Download History"};
+const SLIDES=["home","export","clip","text","shorts","history"],SLIDE_NAMES={home:"Home",export:"Export",clip:"Clip",text:"Text",shorts:"Best Shorts",history:"Download History"};
 let slideNow=-1;
 function route(){const v=SLIDES.includes(location.hash.slice(1))?location.hash.slice(1):"home",i=SLIDES.indexOf(v),dir=slideNow<0||i===slideNow?"":(i>slideNow?"slide-r":"slide-l");
  SLIDES.forEach(x=>$("#"+x).hidden=x!==v);
@@ -1130,6 +1208,49 @@ function sendToText(i){const c=C.clips[i],s=C.src;if(!s||!s.id)return csay("Plea
  if(c.src)txOpen({id:c.src,name:s.name+" (clip "+(i+1)+")",kind:"video"},null,"/api/source/"+c.src+"/stream",true);
  else txOpen(s,[c.start,c.end],C.blob||"/api/source/"+s.id+"/stream",true);
  Tx.origin={idx:i,srcId:s.id};location.hash="text"}
+
+/* ---------- Best Shorts AI ---------- */
+const SH={src:null,busy:false,xhr:null,ctrl:null,job:null,blob:null};
+$("#shsrc").innerHTML=loaderHTML("sh",false,true);
+const shUI=on=>{$("#shGo").disabled=on||!(SH.src&&SH.src.id)};
+const SHL=makeLoader("sh",SH,{link:true,photo:false,hist:"SHORTS",lock:shUI,
+ check:s=>s.kind==="video"?null:"Best Shorts works with videos. Please choose a video file.",
+ onSource(s,preview){SH.src=s;$("#shres").hidden=true;$("#shpv").src=preview;$("#shpv").load();$("#shtitle").textContent=s.name;
+  $("#shchips").replaceChildren(...[s.size&&fmt(s.size),s.duration&&("Duration "+T(s.duration))].filter(Boolean).map(t=>{const c=document.createElement("span");c.className="chip";c.textContent=t;return c}));
+  $("#shw").hidden=false},
+ onReady(){shUI(false)},onFail(){$("#shw").hidden=true}});
+function shShow(id,files){const vert=$("#shfmt").value==="v",grid=$("#shgrid");
+ grid.className="shgrid"+(vert?" v":"");
+ $("#shcnt").textContent=files.length+(files.length>1?" best shorts found":" best short found");
+ $("#shzip").href="/api/jobs/"+id+"/zip";$("#shzip").textContent="Download all ("+files.length+")";
+ grid.replaceChildren(...files.map((f,n)=>{const c=document.createElement("div");c.className="shc";c.style.animationDelay=n*70+"ms";
+  c.innerHTML="<div class='shth'><span class='shrank'></span><span class='shdur'></span><button class='shplay' type='button' aria-label='Play short'>&#9654;</button></div><div class='shb'><span class='shlab'></span><div class='shts'></div><div class='shsc'>Highlight score <span><i></i></span><b></b></div><a class='btn ghost'>Download</a></div>";
+  const th=c.querySelector(".shth");
+  if(f.thumb){const im=document.createElement("img");im.alt="";im.loading="lazy";im.src="/api/jobs/"+id+"/thumb/"+f.i;th.prepend(im)}
+  c.querySelector(".shrank").textContent="#"+(n+1);c.querySelector(".shdur").textContent=T(f.end-f.start);
+  c.querySelector(".shlab").textContent=f.label||"Highlight";c.querySelector(".shts").textContent=T(f.start)+"  →  "+T(f.end);
+  c.querySelector(".shsc i").style.width=(f.score||0)+"%";c.querySelector(".shsc b").textContent=(f.score||0)+"%";
+  const a=c.querySelector("a");a.href="/api/jobs/"+id+"/files/"+f.i;a.download=f.name;a.title=fmt(f.size);
+  const play=()=>{if(th.querySelector("video"))return;
+   document.querySelectorAll("#shgrid video").forEach(v=>v.pause());
+   const v=document.createElement("video");v.src="/api/jobs/"+id+"/files/"+f.i+"?inline=1";v.controls=true;v.autoplay=true;v.playsInline=true;
+   th.querySelectorAll("img,.shplay").forEach(x=>x.remove());th.appendChild(v);v.play().catch(()=>{})};
+  c.querySelector(".shplay").onclick=e=>{e.stopPropagation();play()};th.onclick=play;
+  return c}));
+ $("#shres").hidden=false;$("#shres").scrollIntoView({behavior:"smooth",block:"start"})}
+async function shAnalyze(){const s=SH.src;if(!s||!s.id||SH.busy)return;
+ SH.busy=true;$("#shGo").disabled=true;$("#shplus").disabled=true;const lb=$("#shload");if(lb)lb.disabled=true;
+ $("#shres").hidden=true;SHL.say("");$("#shprog").hidden=false;$("#shai").hidden=false;$("#shaitxt").textContent="Starting…";setProg("sh","Starting…",null);
+ SH.ctrl=new AbortController();const sig={signal:SH.ctrl.signal};SH.job=null;
+ try{const body={source:s.id,count:+$("#shcount").value,length:+$("#shlen").value,vertical:$("#shfmt").value==="v"};
+  SH.job=(await(await api("/api/shorts",{method:"POST",headers:J,body:JSON.stringify(body),...sig})).json()).id;
+  const j=await pollJob(SH.job,sig,j=>{const t=j.status==="queued"?"Waiting…":(j.phase||"Analyzing");$("#shaitxt").textContent=t;setProg("sh",t,j.status==="processing"?j.pct:null)});
+  shShow(SH.job,j.files);
+  addHist({name:s.name+" ("+j.files.length+" best shorts)",format:"SHORTS",quality:body.length+" sec"+(body.vertical?" 9:16":""),date:new Date().toISOString(),status:"Completed"})}
+ catch(e){if(e.name==="AbortError")SHL.say("Cancelled.");else{SHL.say(e.message,1);addHist({name:s.name,format:"SHORTS",quality:"",date:new Date().toISOString(),status:"Failed"})}}
+ $("#shprog").hidden=true;$("#shai").hidden=true;SH.job=null;SH.busy=false;$("#shplus").disabled=false;if(lb)lb.disabled=false;shUI(false)}
+$("#shGo").onclick=shAnalyze;
+addEventListener("hashchange",()=>{if(location.hash!=="#shorts")document.querySelectorAll("#shgrid video").forEach(v=>v.pause())});
 
 /* sidebar 3-dot menu */
 {const b=$("#sdots"),m=$("#smenu"),close=()=>{m.hidden=true;b.setAttribute("aria-expanded","false")};

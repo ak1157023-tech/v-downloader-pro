@@ -201,7 +201,7 @@ main{max-width:1060px;width:100%;margin:0 auto;padding:48px 30px 80px}
 .search input{background:var(--panel);border:2px solid #64FFDA;border-radius:12px;padding:16px 20px;font-size:1rem;letter-spacing:.02em}
 .search input::placeholder{color:#8892B0}
 .search input:focus{box-shadow:0 0 0 4px #64FFDA22}
-#home .search .btn{padding:0 32px;text-transform:uppercase;letter-spacing:.02em}
+#downloader .search .btn{padding:0 32px;text-transform:uppercase;letter-spacing:.02em}
 .card,.txcard,.txr,.txact{box-shadow:0 14px 40px #0000004d}
 .card{border-color:#2A4066}
 h1{font-weight:700}
@@ -216,7 +216,7 @@ h1{font-weight:700}
  .side nav button.on{box-shadow:none;background:#64FFDA1f}
  main{padding:24px 14px 60px}
 }
-@media(max-width:600px){#home .search{flex-direction:column}#home .search .btn{padding:14px}}
+@media(max-width:600px){#downloader .search{flex-direction:column}#downloader .search .btn{padding:14px}}
 
 /* ===== slides ===== */
 @keyframes slR{from{opacity:0;transform:translateX(56px)}to{opacity:1;transform:none}}
@@ -344,13 +344,34 @@ main{padding-bottom:110px}
 .shsc{display:flex;align-items:center;gap:8px;color:var(--mut);font-size:.78rem}
 .shsc span{flex:1;height:6px;border-radius:99px;background:#0B0B0F;overflow:hidden}.shsc i{display:block;height:100%;background:#FFC1D9;border-radius:99px}
 .shb .btn{text-align:center}
+
+/* ===== Home hub ===== */
+.pager{display:none!important}
+main{padding-bottom:70px!important}
+.hub{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:18px;margin-top:8px}
+.tool{position:relative;display:flex;flex-direction:column;gap:10px;padding:24px;background:var(--panel);border:1px solid var(--line);border-radius:22px;color:var(--ink);text-decoration:none;box-shadow:0 14px 40px #0000004d;transition:.25s;animation:in .4s ease both}
+.tool:nth-child(2){animation-delay:.05s}.tool:nth-child(3){animation-delay:.1s}.tool:nth-child(4){animation-delay:.15s}.tool:nth-child(5){animation-delay:.2s}.tool:nth-child(6){animation-delay:.25s}
+.tool:hover,.tool:focus-visible{transform:translateY(-4px);border-color:#64FFDA;box-shadow:0 18px 44px #64FFDA1f;outline:none}
+.tool .ti{width:58px;height:58px;border-radius:16px;display:grid;place-items:center;background:#64FFDA14;border:1px solid #64FFDA44;color:#64FFDA;transition:.25s}
+.tool:hover .ti{background:#64FFDA;color:#0A192F}
+.tool .ti svg{width:28px;height:28px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.tool b{font-size:1.15rem}
+.tool small{color:var(--mut);font-size:.9rem;line-height:1.5;flex:1}
+.tool .go-ar{font-style:normal;font-weight:600;color:#64FFDA;font-size:.9rem;transition:.2s}
+.tool:hover .go-ar{transform:translateX(4px)}
+.tool.pk .ti{background:#FFC1D91a;border-color:#FFC1D955;color:#FFC1D9}
+.tool.pk:hover{border-color:#FFC1D9;box-shadow:0 18px 44px #FFC1D91f}
+.tool.pk:hover .ti{background:#FFC1D9;color:#0B0B0F}
+.tool.pk .go-ar{color:#FFC1D9}
+.back{display:inline-flex;align-items:center;gap:6px;margin:0 0 18px;padding:8px 16px;border:1px solid var(--line);border-radius:999px;background:var(--panel);color:var(--ink);text-decoration:none;font-weight:600;font-size:.9rem;transition:.2s}
+.back:hover{border-color:#64FFDA;color:#64FFDA}
 </style>
 </head>
 <body>
 <aside class="side">
   <div class="brand"><div class="logo"><svg width="38" height="38" viewBox="0 0 32 32" aria-hidden="true"><path d="M8 6.5 25.5 16 8 25.5z" fill="#E6F1FF" stroke="#E6F1FF" stroke-width="3.2" stroke-linejoin="round"/><path d="M13.2 12.2 19 16l-5.8 3.8z" fill="#172A45"/></svg></div>Clipecut</div>
   <div class="nlabel">Menu</div>
-  <nav aria-label="Main"><button data-v="home" class="on"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg></span><span class="nm">Home</span><span class="nk">1</span></button><button data-v="export"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 4v16M17 4v16M3 9h4M3 15h4M17 9h4M17 15h4"/></svg></span><span class="nm">Export</span><span class="nk">2</span></button><button data-v="clip"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M20 4 8.1 15.9M14.5 14.5 20 20M8.1 8.1 12 12"/></svg></span><span class="nm">Clip</span><span class="nk">3</span></button><button data-v="text"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7V5h16v2M9 20h6M12 5v15"/></svg></span><span class="nm">Text</span><span class="nk">4</span></button><button data-v="shorts"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg></span><span class="nm">Best Shorts</span><span class="nk">5</span></button><button data-v="history"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/></svg></span><span class="nm">Download History</span><span class="nk">6</span></button></nav>
+  <nav aria-label="Main"><button data-v="home" class="on"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg></span><span class="nm">Home</span></button></nav>
   <div class="sbot">
     <button class="sdots" id="sdots" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="More options"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></button>
     <div class="smenu" id="smenu" role="menu" hidden>
@@ -361,6 +382,19 @@ main{padding-bottom:110px}
 </aside>
 <main>
 <section id="home">
+  <h1>Welcome to <span>Clipecut</span></h1>
+  <p class="sub">Everything you need for your videos in one place. Pick a tool to get started.</p>
+  <div class="hub">
+    <a class="tool" href="#downloader"><span class="ti"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M4 20h16"/></svg></span><b>URL Downloader</b><small>Paste a video link, pick the quality and download it.</small><i class="go-ar">Open &rarr;</i></a>
+    <a class="tool" href="#export"><span class="ti"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 4v16M17 4v16M3 9h4M3 15h4M17 9h4M17 15h4"/></svg></span><b>Export</b><small>Cut a video on the timeline, delete parts and export it.</small><i class="go-ar">Open &rarr;</i></a>
+    <a class="tool" href="#clip"><span class="ti"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M20 4 8.1 15.9M14.5 14.5 20 20M8.1 8.1 12 12"/></svg></span><b>Clip</b><small>Make clips from a video or turn a photo into a video.</small><i class="go-ar">Open &rarr;</i></a>
+    <a class="tool" href="#text"><span class="ti"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7V5h16v2M9 20h6M12 5v15"/></svg></span><b>Text</b><small>Place styled and animated text on a video or photo.</small><i class="go-ar">Open &rarr;</i></a>
+    <a class="tool pk" href="#shorts"><span class="ti"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg></span><b>Best Shorts AI</b><small>AI finds the best moments of a long video and cuts shorts.</small><i class="go-ar">Open &rarr;</i></a>
+    <a class="tool" href="#history"><span class="ti"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/></svg></span><b>Download History</b><small>See everything you downloaded, made or exported.</small><i class="go-ar">Open &rarr;</i></a>
+  </div>
+</section>
+
+<section id="downloader" hidden>
   <h1>Download Your Favorite <span>Videos Easily</span></h1>
   <p class="sub">Paste a video link, choose your preferred format and quality, and download.</p>
   <div class="search">
@@ -574,7 +608,7 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 async function api(p,o){const r=await fetch(p,o);if(!r.ok){let m="Request failed.";try{m=(await r.json()).error||m}catch{}throw new Error(m)}return r}
 
 /* navigation */
-const SLIDES=["home","export","clip","text","shorts","history"],SLIDE_NAMES={home:"Home",export:"Export",clip:"Clip",text:"Text",shorts:"Best Shorts",history:"Download History"};
+const SLIDES=["home","downloader","export","clip","text","shorts","history"],SLIDE_NAMES={home:"Home",downloader:"URL Downloader",export:"Export",clip:"Clip",text:"Text",shorts:"Best Shorts",history:"Download History"};
 let slideNow=-1;
 function route(){const v=SLIDES.includes(location.hash.slice(1))?location.hash.slice(1):"home",i=SLIDES.indexOf(v),dir=slideNow<0||i===slideNow?"":(i>slideNow?"slide-r":"slide-l");
  SLIDES.forEach(x=>$("#"+x).hidden=x!==v);
@@ -585,7 +619,7 @@ function route(){const v=SLIDES.includes(location.hash.slice(1))?location.hash.s
  slideNow=i;window.scrollTo({top:0});
  document.querySelectorAll(".pager .dot").forEach((d,k)=>{d.classList.toggle("on",k===i);d.setAttribute("aria-current",k===i?"true":"false")});
  $("#pgPrev").disabled=i===0;$("#pgNext").disabled=i===SLIDES.length-1}
-function goSlide(d){const i=slideNow+d;if(i<0||i>=SLIDES.length)return;location.hash=SLIDES[i]==="home"?"":SLIDES[i]}
+function goSlide(d){}
 $("#pgPrev").onclick=()=>goSlide(-1);$("#pgNext").onclick=()=>goSlide(1);
 document.querySelectorAll(".pager .dot").forEach((d,k)=>d.onclick=()=>{location.hash=SLIDES[k]==="home"?"":SLIDES[k]});
 /* swipe left / right on a phone to move to the next / previous slide (not while dragging inside the player, timeline, text or sliders) */
@@ -1260,10 +1294,11 @@ addEventListener("hashchange",()=>{if(location.hash!=="#shorts")document.querySe
   if(a==="clear"){try{localStorage.removeItem("vdp_hist")}catch{}renderHist()}
   else if(a==="logout")location.href="/logout"}}
 
-/* keys 1-5 jump to the sidebar sections */
+/* keys 1-6 open the tools, 0 = Home */
 document.addEventListener("keydown",e=>{if(e.ctrlKey||e.metaKey||e.altKey||/INPUT|SELECT|TEXTAREA/.test(e.target.tagName))return;
- const i=+e.key;if(i>=1&&i<=SLIDES.length){location.hash=SLIDES[i-1]==="home"?"":SLIDES[i-1]}});
+ const i=+e.key;if(i>=1&&i<SLIDES.length)location.hash=SLIDES[i];else if(e.key==="0")location.hash=""});
 
+SLIDES.slice(1).forEach(id=>$("#"+id).insertAdjacentHTML("afterbegin",'<a class="back" href="#">&lsaquo; Home</a>'));
 route();
 </script>
 </body>

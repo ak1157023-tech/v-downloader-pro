@@ -3,39 +3,34 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>V-Downloader Pro</title>
-<meta name="theme-color" content="#060a16">
+<title>Clipecut</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<meta name="theme-color" content="#0A192F">
 <link rel="manifest" href="/manifest.json">
 <link rel="apple-touch-icon" href="/icon.svg">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%232563eb'/%3E%3Cpath d='M32 14v26m0 0l-10-10m10 10l10-10M18 50h28' stroke='%23fff' stroke-width='5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="icon" href="/icon.svg">
 <style>
-:root{--bg:#060a16;--panel:#0d1426;--panel2:#121b33;--line:#1f2b4a;--ink:#e8eefc;--mut:#8b9bc2;
---g:linear-gradient(135deg,#1d4ed8,#3b82f6 55%,#38bdf8);--ok:#34d399;--err:#f87171}
+:root{--bg:#0A192F;--panel:#172A45;--panel2:#0F2039;--line:#2A4066;--ink:#E6F1FF;--mut:#8892B0;
+--g:#64FFDA;--ok:#64FFDA;--err:#f87171}
 *{box-sizing:border-box}
 body{margin:0;min-height:100vh;color:var(--ink);font-family:"Segoe UI",system-ui,-apple-system,sans-serif;
-background:radial-gradient(900px 500px at 15% -10%,#14275a55,transparent),radial-gradient(700px 400px at 100% 0,#0b3a6b44,transparent),var(--bg)}
-header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:14px 20px;border-bottom:1px solid var(--line);background:#060a16cc;backdrop-filter:blur(10px);position:sticky;top:0;z-index:5}
-.brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:1.15rem}
-.logo{width:36px;height:36px;border-radius:10px;background:var(--g);display:grid;place-items:center;box-shadow:0 6px 20px #2563eb55}
-nav{display:flex;gap:6px}
-nav button{background:none;border:0;color:var(--mut);padding:9px 16px;border-radius:999px;font:inherit;font-weight:600;cursor:pointer;transition:.2s}
-nav button:hover{color:var(--ink);background:var(--panel2)}
-nav button.on{color:#fff;background:var(--g)}
+background:radial-gradient(900px 500px at 15% -10%,#64FFDA12,transparent),radial-gradient(700px 400px at 100% 0,#172A4566,transparent),var(--bg)}
 main{max-width:860px;margin:0 auto;padding:44px 18px 70px}
 h1{font-size:clamp(1.9rem,5vw,3rem);line-height:1.1;margin:0 0 12px;text-align:center;letter-spacing:-.02em}
 h1 span{background:var(--g);-webkit-background-clip:text;background-clip:text;color:transparent}
 .sub{text-align:center;color:var(--mut);margin:0 auto 28px;max-width:560px}
 .search{display:flex;gap:8px;background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:8px;transition:.2s}
-.search:focus-within{border-color:#3b82f6;box-shadow:0 0 0 4px #3b82f622}
+.search:focus-within{border-color:#64FFDA;box-shadow:0 0 0 4px #64FFDA22}
 .search input{flex:1;min-width:0;background:none;border:0;color:var(--ink);font:inherit;font-size:1.05rem;padding:12px 10px;outline:none}
 .btn{border:0;border-radius:12px;font:inherit;font-weight:700;cursor:pointer;color:#fff;padding:12px 20px;transition:.2s}
 .btn.ghost{background:var(--panel2);color:var(--ink)}
-.btn.ghost:hover{background:#1a2647}
+.btn.ghost:hover{background:#1E3557}
 .btn.pri{background:var(--g)}
-.btn.pri:hover{transform:translateY(-1px);box-shadow:0 8px 24px #2563eb55}
+.btn.pri:hover{transform:translateY(-1px);box-shadow:0 8px 24px #64FFDA2e}
 .btn:disabled{opacity:.55;cursor:not-allowed;transform:none;box-shadow:none}
-button:focus-visible{outline:3px solid #7dd3fc;outline-offset:2px}
+button:focus-visible{outline:3px solid #64FFDA;outline-offset:2px}
 #msg,#cmsg{min-height:26px;margin:14px 4px;color:var(--mut);text-align:center}
 #msg.err,#cmsg.err{color:var(--err)}
 #cmsg.err{background:#f8717114;border:1px solid #f8717155;border-radius:12px;padding:10px 14px;font-weight:600}
@@ -52,8 +47,8 @@ button:focus-visible{outline:3px solid #7dd3fc;outline-offset:2px}
 .qs{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
 .q{background:var(--panel2);border:2px solid var(--line);color:var(--ink);border-radius:14px;padding:14px 10px;font:inherit;cursor:pointer;transition:.2s;text-align:center}
 .q b{display:block;font-size:1.05rem}.q small{color:var(--mut)}
-.q:hover{border-color:#3b82f6}
-.q.on{border-color:#38bdf8;background:#13306a}
+.q:hover{border-color:#64FFDA}
+.q.on{border-color:#64FFDA;background:#64FFDA1f}
 .go{width:100%;padding:18px;font-size:1.15rem;border-radius:16px;letter-spacing:.04em}
 #prog{margin-top:16px}
 .row{display:flex;justify-content:space-between;gap:10px;font-size:.9rem;color:var(--mut);margin-bottom:8px;flex-wrap:wrap}
@@ -65,30 +60,29 @@ button:focus-visible{outline:3px solid #7dd3fc;outline-offset:2px}
 .item{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px 16px}
 .item b{overflow-wrap:anywhere}.item small{color:var(--mut);display:block;margin-top:4px}
 .badge{padding:4px 12px;border-radius:99px;font-size:.8rem;font-weight:700;border:1px solid}
-.badge.Completed{color:var(--ok);border-color:#34d39955}.badge.Failed{color:var(--err);border-color:#f8717155}.badge.Cancelled{color:var(--mut);border-color:var(--line)}
+.badge.Completed{color:var(--ok);border-color:#64FFDA55}.badge.Failed{color:var(--err);border-color:#f8717155}.badge.Cancelled{color:var(--mut);border-color:var(--line)}
 .head{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}.head h2{margin:0}
-.about p{color:var(--mut);line-height:1.7}
 
 .plus{width:46px;height:46px;padding:0;font-size:1.7rem;line-height:1;border-radius:14px;flex:none}
 .pw{position:relative}
 .menu{position:absolute;top:54px;left:0;min-width:190px;background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:6px;z-index:6;box-shadow:0 14px 40px #000a}
 .menu button{display:block;width:100%;text-align:left;background:none;border:0;color:var(--ink);font:inherit;padding:11px 14px;border-radius:10px;cursor:pointer}
-.menu button:hover{background:#1a2647}
+.menu button:hover{background:#1E3557}
 .hint{flex:1;align-self:center;color:var(--mut);padding:0 8px}
-.chk{display:flex;align-items:center;gap:10px;cursor:pointer;font-weight:600}.chk input{width:20px;height:20px;accent-color:#3b82f6}
+.chk{display:flex;align-items:center;gap:10px;cursor:pointer;font-weight:600}.chk input{width:20px;height:20px;accent-color:#64FFDA}
 #wmfields{display:grid;grid-template-columns:2fr 1fr;gap:10px;margin-top:12px}
 #wmfields input,#wmfields select{background:var(--panel2);border:2px solid var(--line);border-radius:12px;color:var(--ink);font:inherit;padding:12px;min-width:0}
-#wmfields input:focus,#wmfields select:focus{outline:none;border-color:#3b82f6}
+#wmfields input:focus,#wmfields select:focus{outline:none;border-color:#64FFDA}
 #wmfields p{grid-column:1/-1;margin:0;color:var(--mut);font-size:.85rem}
 @media(max-width:520px){#wmfields{grid-template-columns:1fr}}
 .pbox{position:relative;border-radius:14px;overflow:hidden;background:#000;margin:0 auto;max-width:100%;width:100%}
 .pstage{position:relative;width:100%;line-height:0;margin:0 auto}
 .pstage video,.pstage img.pimg{display:block;width:100%;height:auto;background:#000}
-.pov{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:64px;height:64px;border-radius:50%;border:0;background:#0b1020b8;color:#fff;font-size:1.5rem;cursor:pointer;z-index:3}
-.pbar{display:flex;gap:8px;align-items:center;padding:8px 30px 8px 10px;background:#0b1020;line-height:1.2}
+.pov{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:64px;height:64px;border-radius:50%;border:0;background:#0A192Fcc;color:#fff;font-size:1.5rem;cursor:pointer;z-index:3}
+.pbar{display:flex;gap:8px;align-items:center;padding:8px 30px 8px 10px;background:#0B1A30;line-height:1.2}
 .pbar button{background:#ffffff1f;border:0;color:#fff;border-radius:8px;padding:6px 12px;font:inherit;font-size:.85rem;cursor:pointer}
 .pbar button:hover{background:#ffffff38}
-.pseek{flex:1;min-width:0;accent-color:#38bdf8}
+.pseek{flex:1;min-width:0;accent-color:#64FFDA}
 .ptime{color:#fff;font-size:.8rem;font-variant-numeric:tabular-nums;white-space:nowrap}
 .grip{position:absolute;right:0;bottom:0;width:24px;height:24px;cursor:nwse-resize;z-index:4;touch-action:none;background:linear-gradient(135deg,transparent 48%,#fffa 48%,#fffa 58%,transparent 58%,transparent 70%,#fffa 70%,#fffa 80%,transparent 80%)}
 .pbox.big{position:fixed;inset:0;z-index:80;max-width:none;width:100%!important;border-radius:0;display:grid;place-items:center}
@@ -99,23 +93,23 @@ button:focus-visible{outline:3px solid #7dd3fc;outline-offset:2px}
 .layers{position:absolute;inset:0;pointer-events:none;overflow:hidden}
 .tw{position:absolute;pointer-events:auto;cursor:move;touch-action:none}
 .tw canvas{display:block;width:100%;height:auto}
-.tw.sel{outline:2px dashed #38bdf8;outline-offset:2px}
-.rh{position:absolute;right:-9px;bottom:-9px;width:16px;height:16px;border-radius:50%;background:#38bdf8;border:2px solid #fff;cursor:nwse-resize;display:none;touch-action:none}
+.tw.sel{outline:2px dashed #64FFDA;outline-offset:2px}
+.rh{position:absolute;right:-9px;bottom:-9px;width:16px;height:16px;border-radius:50%;background:#64FFDA;border:2px solid #fff;cursor:nwse-resize;display:none;touch-action:none}
 .tw.sel .rh{display:block}
 .cm{min-height:26px;margin:12px 4px;color:var(--mut);text-align:center}.cm.err{color:var(--err)}
 .pg{margin:0 0 14px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
 .btns{display:flex;gap:8px;flex-wrap:wrap}
 .tlist{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
 .tlist button{background:var(--panel2);border:2px solid var(--line);color:var(--ink);border-radius:10px;padding:8px 12px;font:inherit;font-size:.9rem;cursor:pointer;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.tlist button.on{border-color:#38bdf8;background:#13306a}
+.tlist button.on{border-color:#64FFDA;background:#64FFDA1f}
 .pgrid{display:grid;grid-template-columns:repeat(3,38px);gap:4px}
 .pgrid button{height:34px;border-radius:8px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);cursor:pointer}
-.pgrid button:hover{background:#1a2647}
+.pgrid button:hover{background:#1E3557}
 .tpan{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px 18px}
 .tpan .g{display:flex;flex-direction:column;gap:6px}.tpan .g.w{grid-column:1/-1}
 .tpan label{color:var(--mut);font-size:.85rem}
 .tpan .r{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.tpan input[type=range]{flex:1;min-width:110px;accent-color:#3b82f6}
+.tpan input[type=range]{flex:1;min-width:110px;accent-color:#64FFDA}
 .tpan input[type=color]{width:42px;height:34px;border:1px solid var(--line);border-radius:8px;background:var(--panel2);padding:2px}
 .tpan textarea,.tpan select,.tpan input[type=text]{background:var(--panel2);border:1px solid var(--line);color:var(--ink);border-radius:10px;font:inherit;padding:9px 11px;min-width:0}
 .tpan textarea{width:100%;min-height:62px;resize:vertical}
@@ -125,27 +119,27 @@ button:focus-visible{outline:3px solid #7dd3fc;outline-offset:2px}
 .txwrap{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(310px,1fr);gap:18px;align-items:start}
 @media(max-width:900px){.txwrap{grid-template-columns:1fr}.txr{position:static!important}}
 .txl{display:grid;gap:16px;min-width:0}
-.txcard,.txr,.txact{background:linear-gradient(180deg,#101a34,#0b1226);border:1px solid #25345e;border-radius:22px;box-shadow:0 18px 50px #00000066,inset 0 1px 0 #ffffff10;animation:in .35s ease}
+.txcard,.txr,.txact{background:linear-gradient(180deg,#182C4A,#132540);border:1px solid #2A4066;border-radius:22px;box-shadow:0 18px 50px #00000066,inset 0 1px 0 #ffffff10;animation:in .35s ease}
 .txcard{padding:14px 14px 10px}
 .txmeta{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap;padding:12px 4px 0}
 .txmeta p{margin:0;font-weight:700;overflow-wrap:anywhere}
 .txbar{display:flex;gap:10px;justify-content:space-between;align-items:center;flex-wrap:wrap;padding:12px 2px 4px}
 .txr{position:sticky;top:84px;padding-bottom:16px}
-.txtabs{display:flex;gap:4px;padding:5px;margin:14px;background:#0a1020;border-radius:14px;border:1px solid var(--line)}
+.txtabs{display:flex;gap:4px;padding:5px;margin:14px;background:#0B1A30;border-radius:14px;border:1px solid var(--line)}
 .txtabs button{flex:1;padding:10px 6px;border:0;border-radius:10px;background:none;color:var(--mut);font:inherit;font-weight:700;cursor:pointer;transition:.2s}
 .txtabs button:hover{color:var(--ink)}
-.txtabs button.on{background:var(--g);color:#fff;box-shadow:0 6px 18px #2563eb55}
+.txtabs button.on{background:var(--g);color:#fff;box-shadow:0 6px 18px #64FFDA2e}
 .tpan{display:block!important;padding:0 16px}
 .tpan [data-g]{display:none;gap:14px}.tpan [data-g].on{display:grid}
 .tpan .g{display:flex;flex-direction:column;gap:7px}
-.tpan label{color:#9db4e8;font-size:.82rem;font-weight:600;letter-spacing:.02em}
-.tpan output{min-width:44px;text-align:right;color:#cfe0ff;font-variant-numeric:tabular-nums;font-size:.85rem}
+.tpan label{color:#8892B0;font-size:.82rem;font-weight:600;letter-spacing:.02em}
+.tpan output{min-width:44px;text-align:right;color:#E6F1FF;font-variant-numeric:tabular-nums;font-size:.85rem}
 .tpan input[type=range]{height:6px}
-.seg{display:flex;background:#0a1020;border:1px solid var(--line);border-radius:12px;padding:3px;gap:3px}
+.seg{display:flex;background:#0B1A30;border:1px solid var(--line);border-radius:12px;padding:3px;gap:3px}
 .seg button,.tg{flex:1;border:0;border-radius:9px;background:none;color:var(--mut);padding:9px 10px;font:inherit;font-weight:700;cursor:pointer;transition:.15s}
 .seg button:hover,.tg:hover{color:#fff}
-.seg button.on,.tg.on{background:#1b3a7a;color:#fff;box-shadow:inset 0 0 0 1px #3b82f6}
-.tg{background:#0a1020;border:1px solid var(--line);min-width:46px;flex:none}
+.seg button.on,.tg.on{background:#64FFDA1f;color:#fff;box-shadow:inset 0 0 0 1px #64FFDA}
+.tg{background:#0B1A30;border:1px solid var(--line);min-width:46px;flex:none}
 .sw{display:flex;gap:7px;flex-wrap:wrap;align-items:center}
 .sw button{width:26px;height:26px;border-radius:50%;border:2px solid #ffffff40;cursor:pointer;padding:0;transition:.15s}
 .sw button:hover{transform:scale(1.15)}
@@ -154,7 +148,7 @@ button:focus-visible{outline:3px solid #7dd3fc;outline-offset:2px}
 .acts{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .opt{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
 .opt .seg{min-width:190px}
-.tw.sel{outline:2px solid #38bdf8;box-shadow:0 0 0 4px #38bdf833}
+.tw.sel{outline:2px solid #64FFDA;box-shadow:0 0 0 4px #64FFDA33}
 .tpan.off{opacity:.4;pointer-events:none;filter:grayscale(.4)}
 .empty{color:var(--mut);text-align:center;padding:8px 14px 0;font-size:.92rem}
 @media(max-width:900px){.txwrap{grid-template-columns:minmax(0,1fr)}}
@@ -164,10 +158,10 @@ button:focus-visible{outline:3px solid #7dd3fc;outline-offset:2px}
 .tt{color:var(--mut);font-variant-numeric:tabular-nums;min-width:120px;text-align:center}
 .tl{position:relative;height:76px;background:var(--panel2);border:1px solid var(--line);border-radius:14px;overflow:hidden;touch-action:none;cursor:pointer;user-select:none}
 .tr{position:absolute;left:0;right:0;top:6px;height:64px}
-.sg{position:absolute;top:0;bottom:0;border:2px solid #0b1020;border-radius:8px;overflow:hidden;background:#1a2647}
-.sg.sel{border-color:#38bdf8;box-shadow:0 0 0 2px #38bdf855}
+.sg{position:absolute;top:0;bottom:0;border:2px solid #0B1A30;border-radius:8px;overflow:hidden;background:#1E3557}
+.sg.sel{border-color:#64FFDA;box-shadow:0 0 0 2px #64FFDA55}
 .sg img{position:absolute;top:0;height:100%;object-fit:cover;pointer-events:none}
-.ph{position:absolute;top:0;bottom:0;width:2px;background:#fff;box-shadow:0 0 8px #38bdf8;pointer-events:none}
+.ph{position:absolute;top:0;bottom:0;width:2px;background:#fff;box-shadow:0 0 8px #64FFDA;pointer-events:none}
 .ph::before{content:"";position:absolute;top:-1px;left:-5px;border:6px solid transparent;border-top-color:#fff}
 #tMsg{min-height:22px}#tMsg.err{color:var(--err)}
 .btn:disabled{opacity:.45;cursor:not-allowed}
@@ -182,19 +176,148 @@ a.btn{text-decoration:none;display:inline-block}
 .note{color:var(--mut);font-size:.85rem;margin:8px 0 0}
 [hidden]{display:none!important}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+/* ===== Clipecut theme: sidebar layout, palette #0A192F #172A45 #64FFDA #8892B0 #E6F1FF ===== */
+body{display:grid;grid-template-columns:248px minmax(0,1fr);font-family:"Poppins","Segoe UI",system-ui,-apple-system,sans-serif;
+ background:radial-gradient(900px 500px at 70% -10%,#64FFDA10,transparent),var(--bg)}
+.side{position:sticky;top:0;height:100vh;background:var(--panel);display:flex;flex-direction:column;padding:24px 0;z-index:5;overflow-y:auto}
+.brand{display:flex;align-items:center;gap:12px;padding:0 22px 26px;font-weight:700;font-size:1.75rem;letter-spacing:-.01em;color:var(--ink)}
+.logo{width:40px;height:40px;display:grid;place-items:center;flex:none}
+.side nav{display:flex;flex-direction:column;gap:6px}
+.side nav button{display:flex;align-items:center;gap:14px;width:100%;text-align:left;background:none;border:0;border-radius:0;color:#CCD6F0;padding:14px 22px;font:inherit;font-weight:500;font-size:1rem;cursor:pointer;transition:.2s}
+.side nav button svg{width:24px;height:24px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.side nav button:hover{color:var(--ink);background:#ffffff0a}
+.side nav button.on{color:#64FFDA;background:#64FFDA14;box-shadow:inset -4px 0 0 #64FFDA}
+main{max-width:1060px;width:100%;margin:0 auto;padding:48px 30px 80px}
+.btn{border-radius:999px}
+.btn.pri{color:#0A192F}
+.btn.pri:hover{box-shadow:0 8px 24px #64FFDA38}
+.btn.pri:disabled{box-shadow:none}
+.go,.go2{border-radius:999px}
+.txtabs button.on{color:#0A192F;box-shadow:0 6px 18px #64FFDA33}
+.seg button.on,.tg.on{color:var(--ink)}
+.search{background:none;border:0;padding:0;gap:14px}
+.search:focus-within{border:0;box-shadow:none}
+.search input{background:var(--panel);border:2px solid #64FFDA;border-radius:12px;padding:16px 20px;font-size:1rem;letter-spacing:.02em}
+.search input::placeholder{color:#8892B0}
+.search input:focus{box-shadow:0 0 0 4px #64FFDA22}
+#home .search .btn{padding:0 32px;text-transform:uppercase;letter-spacing:.02em}
+.card,.txcard,.txr,.txact{box-shadow:0 14px 40px #0000004d}
+.card{border-color:#2A4066}
+h1{font-weight:700}
+.badge.Completed{color:#64FFDA}
+@media(max-width:860px){
+ body{display:block}
+ .side{position:static;height:auto;padding:14px 8px 8px}
+ .brand{padding:0 12px 10px;font-size:1.45rem;justify-content:center}
+ .side nav{flex-direction:row;flex-wrap:wrap;justify-content:center;gap:4px}
+ .side nav button{width:auto;padding:9px 14px;border-radius:999px;font-size:.92rem}
+ .side nav button svg{display:none}
+ .side nav button.on{box-shadow:none;background:#64FFDA1f}
+ main{padding:24px 14px 60px}
+}
+@media(max-width:600px){#home .search{flex-direction:column}#home .search .btn{padding:14px}}
+
+/* ===== slides ===== */
+@keyframes slR{from{opacity:0;transform:translateX(56px)}to{opacity:1;transform:none}}
+@keyframes slL{from{opacity:0;transform:translateX(-56px)}to{opacity:1;transform:none}}
+.slide-r{animation:slR .42s cubic-bezier(.2,.7,.2,1)}
+.slide-l{animation:slL .42s cubic-bezier(.2,.7,.2,1)}
+main{padding-bottom:110px}
+.pager{position:fixed;bottom:18px;left:calc(248px + (100vw - 248px) / 2);transform:translateX(-50%);display:flex;align-items:center;gap:6px;background:#172A45f2;border:1px solid var(--line);border-radius:999px;padding:6px 8px;box-shadow:0 10px 30px #0000006e;z-index:20;backdrop-filter:blur(8px)}
+.pager button{border:0;background:none;color:var(--ink);cursor:pointer;font:inherit}
+.pager #pgPrev,.pager #pgNext{width:34px;height:34px;border-radius:50%;font-size:1.5rem;line-height:1;display:grid;place-items:center}
+.pager #pgPrev:hover:not(:disabled),.pager #pgNext:hover:not(:disabled){background:#64FFDA1f;color:#64FFDA}
+.pager button:disabled{opacity:.3;cursor:default}
+.pager .dots{display:flex;gap:8px;padding:0 6px}
+.pager .dot{width:10px;height:10px;border-radius:99px;background:#8892B055;padding:0;transition:.25s}
+.pager .dot:hover{background:#8892B0}
+.pager .dot.on{width:28px;background:#64FFDA}
+@media(max-width:860px){.pager{left:50%}}
+
+/* ===== Sidebar redesign (5 sections) ===== */
+.side{width:248px;background:linear-gradient(180deg,#172A45 0%,#12233C 100%);border-right:1px solid #2A406688;padding:26px 14px 18px}
+.brand{padding:0 10px 22px;margin-bottom:6px;border-bottom:1px solid #2A406688;font-size:1.6rem}
+.logo{background:#64FFDA14;border:1px solid #64FFDA33;border-radius:12px;width:44px;height:44px}
+.logo svg{width:26px;height:26px}
+.nlabel{padding:16px 12px 8px;font-size:.7rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#8892B0}
+.side nav{gap:4px;flex:1}
+.side nav button{position:relative;border-radius:14px;padding:12px 14px;gap:14px;color:#A8B2D1;font-size:.95rem}
+.side nav button .ic{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;background:#0F2039;border:1px solid #2A4066;flex:none;transition:.2s}
+.side nav button .ic svg{width:19px;height:19px}
+.side nav button:hover{background:#ffffff0a;color:var(--ink)}
+.side nav button:hover .ic{border-color:#64FFDA66}
+.side nav button.on{background:linear-gradient(90deg,#64FFDA1f,#64FFDA05);color:#64FFDA;box-shadow:none}
+.side nav button.on::before{content:"";position:absolute;left:-14px;top:12px;bottom:12px;width:4px;border-radius:0 4px 4px 0;background:#64FFDA;box-shadow:0 0 12px #64FFDA88}
+.side nav button.on .ic{background:#64FFDA;border-color:#64FFDA;color:#0A192F}
+.side nav button .nk{margin-left:auto;font-size:.7rem;color:#8892B0;border:1px solid #2A4066;border-radius:6px;padding:1px 7px}
+.side nav button.on .nk{color:#64FFDA;border-color:#64FFDA55}
+.sfoot{margin-top:14px;padding:14px;border-radius:14px;background:#0F2039;border:1px solid #2A4066;font-size:.78rem;color:#8892B0;line-height:1.5}
+.sfoot b{color:var(--ink);display:block;margin-bottom:2px;font-size:.82rem}
+.sbot{position:relative;margin-top:14px;padding-top:14px;border-top:1px solid #2A406688;display:flex;justify-content:flex-start}
+.sdots{width:42px;height:42px;border-radius:12px;border:1px solid #2A4066;background:#0F2039;color:#A8B2D1;cursor:pointer;display:grid;place-items:center;transition:.2s}
+.sdots svg{width:22px;height:22px;fill:currentColor}
+.sdots:hover,.sdots[aria-expanded="true"]{color:#64FFDA;border-color:#64FFDA66;background:#64FFDA14}
+.smenu{position:absolute;left:0;bottom:62px;min-width:170px;background:#0F2039;border:1px solid #2A4066;border-radius:14px;padding:6px;box-shadow:0 14px 40px #000a;z-index:30}
+.smenu button{display:block;width:100%;text-align:left;background:none;border:0;color:var(--ink);font:inherit;padding:10px 14px;border-radius:10px;cursor:pointer}
+.smenu button:hover{background:#1E3557}
+@media(max-width:860px){
+ .sbot{display:none}
+ .side{position:fixed;inset:auto 0 0 0;top:auto;width:100%;height:auto;flex-direction:row;padding:6px 6px calc(6px + env(safe-area-inset-bottom));border-right:0;border-top:1px solid #2A4066;background:#172A45f5;backdrop-filter:blur(10px);z-index:50;overflow:visible}
+ .brand,.nlabel,.sfoot,.side nav button .nk{display:none}
+ .side nav{flex-direction:row;flex-wrap:nowrap;justify-content:space-around;width:100%;gap:2px}
+ .side nav button{flex:1;flex-direction:column;gap:3px;padding:6px 2px;border-radius:12px;font-size:.66rem;text-align:center;justify-content:center;width:auto;min-width:0}
+ .side nav button .ic{width:34px;height:26px;border:0;background:none;border-radius:999px}
+ .side nav button svg{display:block!important;width:20px;height:20px}
+ .side nav button .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+ .side nav button.on::before{display:none}
+ .side nav button.on .ic{background:#64FFDA;color:#0A192F}
+ .side nav button.on{background:none}
+ main{padding-bottom:100px}
+ .pager{display:none}
+}
+
+/* ===== Minimal sidebar style (desktop): flat items, #172A45 active fill, teal bar on the right ===== */
+@media(min-width:861px){
+ .side{background:#112240;border-right:1px solid #1D3150;padding:28px 0 18px}
+ .brand{padding:0 24px 30px;margin:0;border:0;font-size:1.6rem;font-weight:600;gap:12px}
+ .logo{background:none;border:0;width:34px;height:34px}
+ .logo svg{width:32px;height:32px}
+ .nlabel{display:none}
+ .side nav{gap:2px}
+ .side nav button{border-radius:0;padding:15px 24px;gap:16px;color:#8892B0;font-weight:500;background:none}
+ .side nav button .ic{width:auto;height:auto;border:0;background:none;border-radius:0;display:block}
+ .side nav button .ic svg{width:22px;height:22px;stroke-width:1.7}
+ .side nav button .nk{display:none}
+ .side nav button:hover{background:#ffffff08;color:#CCD6F0}
+ .side nav button:hover .ic{border:0}
+ .side nav button.on{background:#172A45;color:#E6F1FF;box-shadow:inset -4px 0 0 #64FFDA}
+ .side nav button.on::before{display:none}
+ .side nav button.on .ic{background:none;border:0;color:#E6F1FF}
+ .sbot{margin:14px 20px 0;border-top:1px solid #1D3150}
+ .sdots{background:none;border-color:#1D3150;color:#8892B0}
+}
 </style>
 </head>
 <body>
-<header>
-  <div class="brand"><div class="logo"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11m0 0l-4-4m4 4l4-4M5 20h14"/></svg></div>V-Downloader Pro</div>
-  <nav><button data-v="home" class="on">Home</button><button data-v="export">Export</button><button data-v="clip">Clip</button><button data-v="text">Text</button><button data-v="history">Download History</button><button data-v="about">About</button></nav>
-</header>
+<aside class="side">
+  <div class="brand"><div class="logo"><svg width="38" height="38" viewBox="0 0 32 32" aria-hidden="true"><path d="M8 6.5 25.5 16 8 25.5z" fill="#E6F1FF" stroke="#E6F1FF" stroke-width="3.2" stroke-linejoin="round"/><path d="M13.2 12.2 19 16l-5.8 3.8z" fill="#172A45"/></svg></div>Clipecut</div>
+  <div class="nlabel">Menu</div>
+  <nav aria-label="Main"><button data-v="home" class="on"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg></span><span class="nm">Home</span><span class="nk">1</span></button><button data-v="export"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 4v16M17 4v16M3 9h4M3 15h4M17 9h4M17 15h4"/></svg></span><span class="nm">Export</span><span class="nk">2</span></button><button data-v="clip"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M20 4 8.1 15.9M14.5 14.5 20 20M8.1 8.1 12 12"/></svg></span><span class="nm">Clip</span><span class="nk">3</span></button><button data-v="text"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7V5h16v2M9 20h6M12 5v15"/></svg></span><span class="nm">Text</span><span class="nk">4</span></button><button data-v="history"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/></svg></span><span class="nm">Download History</span><span class="nk">5</span></button></nav>
+  <div class="sbot">
+    <button class="sdots" id="sdots" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="More options"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></button>
+    <div class="smenu" id="smenu" role="menu" hidden>
+      <button role="menuitem" data-a="clear">Clear history</button>
+      <button role="menuitem" data-a="logout">Log out</button>
+    </div>
+  </div>
+</aside>
 <main>
 <section id="home">
   <h1>Download Your Favorite <span>Videos Easily</span></h1>
   <p class="sub">Paste a video link, choose your preferred format and quality, and download.</p>
   <div class="search">
-    <input id="url" type="text" inputmode="url" placeholder="Paste a video link here" autocomplete="off" aria-label="Video link">
+    <input id="url" type="text" inputmode="url" placeholder="PASTE YOUR VIDEO URL HERE..." autocomplete="off" aria-label="Video link">
     <button class="btn pri" id="search">Search</button>
   </div>
   <div id="msg" role="status"></div>
@@ -271,7 +394,7 @@ a.btn{text-decoration:none;display:inline-block}
       </div>
     </div>
     <span class="hint" id="hint">Tap + to add a Photo, Video or Link</span>
-    <input id="clipurl" type="text" inputmode="url" placeholder="Paste a video link here" autocomplete="off" aria-label="Video link" hidden>
+    <input id="clipurl" type="text" inputmode="url" placeholder="PASTE YOUR VIDEO URL HERE..." autocomplete="off" aria-label="Video link" hidden>
     <button class="btn pri" id="loadlink" hidden>Load</button>
   </div>
   <input type="file" id="fvideo" accept="video/*,audio/*,.mkv,.avi,.mov,.webm" hidden>
@@ -331,7 +454,7 @@ a.btn{text-decoration:none;display:inline-block}
           <div class="tlist" id="txlist" style="margin:0"></div>
           <div class="btns"><button class="btn pri sm" id="txAdd" type="button">+ Add text</button><button class="btn ghost sm" id="txDel" type="button">Delete text</button></div>
         </div>
-        <p class="hint" style="margin:6px 2px 4px">Drag a text on the preview to move it. Drag its round blue corner to resize it.</p>
+        <p class="hint" style="margin:6px 2px 4px">Drag a text on the preview to move it. Drag its round teal corner to resize it.</p>
       </div>
       <div class="txact">
         <div class="opt" id="txphoto" hidden>
@@ -361,11 +484,7 @@ a.btn{text-decoration:none;display:inline-block}
   <div class="hist" id="hist"></div>
 </section>
 
-<section id="about" class="about" hidden>
-  <h2>About V-Downloader Pro</h2>
-  <p>V-Downloader Pro downloads videos from direct media links and from sources supported by the server. Only the qualities that really exist for your link are shown, and MP3 is offered only when the server can convert audio.</p>
-  <p>Your download history is stored only in this browser. Please download only content you own or have permission to save.</p>
-</section>
+<div class="pager" role="navigation" aria-label="Slides"><button id="pgPrev" type="button" aria-label="Previous slide">&#8249;</button><span class="dots"><button class="dot" type="button" aria-label="Home" title="Home"></button><button class="dot" type="button" aria-label="Export" title="Export"></button><button class="dot" type="button" aria-label="Clip" title="Clip"></button><button class="dot" type="button" aria-label="Text" title="Text"></button><button class="dot" type="button" aria-label="Download History" title="Download History"></button></span><button id="pgNext" type="button" aria-label="Next slide">&#8250;</button></div>
 </main>
 
 <script>
@@ -377,10 +496,24 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 async function api(p,o){const r=await fetch(p,o);if(!r.ok){let m="Request failed.";try{m=(await r.json()).error||m}catch{}throw new Error(m)}return r}
 
 /* navigation */
-function route(){const v=["export","clip","text","history","about"].includes(location.hash.slice(1))?location.hash.slice(1):"home";
- ["home","export","clip","text","history","about"].forEach(x=>$("#"+x).hidden=x!==v);
+const SLIDES=["home","export","clip","text","history"],SLIDE_NAMES={home:"Home",export:"Export",clip:"Clip",text:"Text",history:"Download History"};
+let slideNow=-1;
+function route(){const v=SLIDES.includes(location.hash.slice(1))?location.hash.slice(1):"home",i=SLIDES.indexOf(v),dir=slideNow<0||i===slideNow?"":(i>slideNow?"slide-r":"slide-l");
+ SLIDES.forEach(x=>$("#"+x).hidden=x!==v);
  document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("on",b.dataset.v===v));
- if(v==="history")renderHist()}
+ if(v==="history")renderHist();
+ const sec=$("#"+v);sec.classList.remove("slide-l","slide-r");
+ if(dir){void sec.offsetWidth;sec.classList.add(dir);sec.addEventListener("animationend",()=>sec.classList.remove("slide-l","slide-r"),{once:true})}
+ slideNow=i;window.scrollTo({top:0});
+ document.querySelectorAll(".pager .dot").forEach((d,k)=>{d.classList.toggle("on",k===i);d.setAttribute("aria-current",k===i?"true":"false")});
+ $("#pgPrev").disabled=i===0;$("#pgNext").disabled=i===SLIDES.length-1}
+function goSlide(d){const i=slideNow+d;if(i<0||i>=SLIDES.length)return;location.hash=SLIDES[i]==="home"?"":SLIDES[i]}
+$("#pgPrev").onclick=()=>goSlide(-1);$("#pgNext").onclick=()=>goSlide(1);
+document.querySelectorAll(".pager .dot").forEach((d,k)=>d.onclick=()=>{location.hash=SLIDES[k]==="home"?"":SLIDES[k]});
+/* swipe left / right on a phone to move to the next / previous slide (not while dragging inside the player, timeline, text or sliders) */
+let swX=0,swY=0,swOk=false;
+document.addEventListener("touchstart",e=>{const t=e.touches[0];swX=t.clientX;swY=t.clientY;swOk=e.touches.length===1&&!document.querySelector(".pbox.big")&&!e.target.closest(".tl,.pbox,input,textarea,select,.tw,.layers,.pgrid,.menu,.tlist,.tpan,.seg")},{passive:true});
+document.addEventListener("touchend",e=>{if(!swOk)return;swOk=false;const t=e.changedTouches[0],dx=t.clientX-swX,dy=t.clientY-swY;if(Math.abs(dx)>90&&Math.abs(dx)>Math.abs(dy)*2)goSlide(dx<0?1:-1)},{passive:true});
 document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>{location.hash=b.dataset.v==="home"?"":b.dataset.v});
 addEventListener("hashchange",route);
 
@@ -506,7 +639,7 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape"&&bigBox){bigBox.clas
 function loaderHTML(p,photo,link){return`<div class="search"><div class="pw"><button class="btn pri plus" id="${p}plus" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="Add file">+</button>
 <div class="menu" id="${p}menu" role="menu" hidden>${photo?'<button role="menuitem" data-a="photo">Photo</button>':""}<button role="menuitem" data-a="video">Video</button>${link?'<button role="menuitem" data-a="link">Link</button>':""}</div></div>
 <span class="hint" id="${p}hint">Tap + to add ${photo?"a Photo or Video":"a Video or Link"}</span>
-${link?`<input id="${p}url" type="text" inputmode="url" placeholder="Paste a video link here" autocomplete="off" aria-label="Video link" hidden><button class="btn pri" id="${p}load" hidden>Load</button>`:""}</div>
+${link?`<input id="${p}url" type="text" inputmode="url" placeholder="PASTE YOUR VIDEO URL HERE..." autocomplete="off" aria-label="Video link" hidden><button class="btn pri" id="${p}load" hidden>Load</button>`:""}</div>
 <input type="file" id="${p}fvideo" accept="video/*,.mkv,.avi,.mov,.webm" hidden>${photo?`<input type="file" id="${p}fphoto" accept="image/*" hidden>`:""}
 <div class="cm" id="${p}msg" role="status"></div>
 <div class="pg" id="${p}prog" hidden><div class="row"><span id="${p}phase"></span><span id="${p}pct"></span></div><div class="bar" id="${p}bar"><i></i></div>
@@ -997,6 +1130,18 @@ function sendToText(i){const c=C.clips[i],s=C.src;if(!s||!s.id)return csay("Plea
  if(c.src)txOpen({id:c.src,name:s.name+" (clip "+(i+1)+")",kind:"video"},null,"/api/source/"+c.src+"/stream",true);
  else txOpen(s,[c.start,c.end],C.blob||"/api/source/"+s.id+"/stream",true);
  Tx.origin={idx:i,srcId:s.id};location.hash="text"}
+
+/* sidebar 3-dot menu */
+{const b=$("#sdots"),m=$("#smenu"),close=()=>{m.hidden=true;b.setAttribute("aria-expanded","false")};
+ b.onclick=e=>{e.stopPropagation();m.hidden=!m.hidden;b.setAttribute("aria-expanded",String(!m.hidden))};
+ document.addEventListener("click",close);document.addEventListener("keydown",e=>{if(e.key==="Escape")close()});
+ m.onclick=e=>{const a=e.target.dataset.a;if(!a)return;close();
+  if(a==="clear"){try{localStorage.removeItem("vdp_hist")}catch{}renderHist()}
+  else if(a==="logout")location.href="/logout"}}
+
+/* keys 1-5 jump to the sidebar sections */
+document.addEventListener("keydown",e=>{if(e.ctrlKey||e.metaKey||e.altKey||/INPUT|SELECT|TEXTAREA/.test(e.target.tagName))return;
+ const i=+e.key;if(i>=1&&i<=SLIDES.length){location.hash=SLIDES[i-1]==="home"?"":SLIDES[i-1]}});
 
 route();
 </script>

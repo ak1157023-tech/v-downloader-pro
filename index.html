@@ -389,6 +389,24 @@ main{padding-bottom:70px!important}
  .side nav button.on{background:#64FFDA1f!important;color:#64FFDA!important}
  main{padding-bottom:70px!important}
 }
+
+/* ===== Clean section headings: hide decorative descriptions only ===== */
+main .sub, main .section-description, main .section-desc, main .title-description{display:none!important}
+
+/* ===== Watermark Remover ===== */
+#wmremover .aibox{border-color:#64FFDA55;background:linear-gradient(90deg,#64FFDA14,transparent)}
+#wmremover .orb{background:radial-gradient(circle at 30% 30%,#fff,#64FFDA 45%,#0f5d4d)}
+.wrbox{position:relative;display:block;width:fit-content;max-width:100%;margin:0 auto;line-height:0;border-radius:14px;overflow:hidden;background:#000}
+.wrbox img,.wrbox video{display:block;max-width:100%;max-height:62vh}
+.wrlay{position:absolute;inset:0;pointer-events:none}
+.wrreg{position:absolute;border:2px solid #64FFDA;background:#64FFDA33;border-radius:4px;color:#04121f;font:700 12px/1 system-ui,sans-serif}
+.wrreg span{position:absolute;top:-1px;left:-1px;background:#64FFDA;padding:3px 6px;border-radius:3px 0 4px 0}
+.wrdrag{position:absolute;inset:0;touch-action:none;display:none}
+.wrbox.man .wrdrag{display:block;cursor:crosshair}
+.wrbox.man.v .wrdrag{bottom:48px}
+.wrtools{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 12px}
+#wrout{border-radius:14px;overflow:hidden;background:#000;margin-bottom:14px;line-height:0;text-align:center}
+#wrout img,#wrout video{max-width:100%;max-height:62vh}
 </style>
 </head>
 <body>
@@ -407,19 +425,18 @@ main{padding-bottom:70px!important}
 <main>
 <section id="home">
   <h1>Welcome to <span>Clipecut</span></h1>
-  <p class="sub">Everything you need for your videos in one place. Pick a tool to get started.</p>
   <div class="hub">
     <a class="tool" href="#downloader"><span class="ti"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M4 20h16"/></svg></span><b>URL Downloader</b><i class="go-ar">Open &rarr;</i></a>
     <a class="tool" href="#export"><span class="ti"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 4v16M17 4v16M3 9h4M3 15h4M17 9h4M17 15h4"/></svg></span><b>Export</b><i class="go-ar">Open &rarr;</i></a>
     <a class="tool" href="#clip"><span class="ti"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M20 4 8.1 15.9M14.5 14.5 20 20M8.1 8.1 12 12"/></svg></span><b>Clip</b><i class="go-ar">Open &rarr;</i></a>
     <a class="tool" href="#text"><span class="ti"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7V5h16v2M9 20h6M12 5v15"/></svg></span><b>Text</b><i class="go-ar">Open &rarr;</i></a>
     <a class="tool pk" href="#shorts"><span class="ti"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg></span><b>Best Shorts AI</b><i class="go-ar">Open &rarr;</i></a>
+    <a class="tool" href="#wmremover"><span class="ti"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3s6 6.2 6 10.5a6 6 0 0 1-12 0C6 9.2 12 3 12 3z"/><path d="M4 4l16 16"/></svg></span><b>Watermark Remover</b><i class="go-ar">Open &rarr;</i></a>
   </div>
 </section>
 
 <section id="downloader" hidden>
   <h1>Download Your Favorite <span>Videos Easily</span></h1>
-  <p class="sub">Paste a video link, choose your preferred format and quality, and download.</p>
   <div class="search">
     <input id="url" type="text" inputmode="url" placeholder="PASTE YOUR VIDEO URL HERE..." autocomplete="off" aria-label="Video link">
     <button class="btn pri" id="search">Search</button>
@@ -437,7 +454,6 @@ main{padding-bottom:70px!important}
       <div id="wmfields" hidden>
         <input id="wmtext" type="text" maxlength="40" placeholder="Watermark name, e.g. @yourname" aria-label="Watermark name">
         <select id="wmpos" aria-label="Watermark position"><option value="br">Bottom right</option><option value="bl">Bottom left</option><option value="tr">Top right</option><option value="tl">Top left</option></select>
-        <p>Adding a watermark re-encodes the video, so it takes longer. For a faster result choose 480p or 720p.</p>
       </div>
     </div>
     <div class="sec">
@@ -453,7 +469,6 @@ main{padding-bottom:70px!important}
 
 <section id="export" hidden>
   <h1>Edit &amp; <span>Export</span></h1>
-  <p class="sub">Add a video, cut it on the timeline, delete the parts you don't want (the gap closes by itself), then export it or send it to Clip.</p>
   <div id="xsrc"></div>
   <div class="card" id="xw" hidden>
     <div class="top" style="display:block">
@@ -475,19 +490,16 @@ main{padding-bottom:70px!important}
       </div>
       <div class="tl" id="tlv" aria-label="Video timeline"><div class="tr" id="tTrack"></div><div class="ph" id="tPh"></div></div>
       <div class="hint" id="tMsg" role="status">Click a part to select it. Drag on the timeline to move the playhead.</div>
-      <p class="note">Split cuts at the playhead. Delete removes the selected part and the gap closes automatically. Shortcuts: Space = play/pause, S = split, Delete = remove part.</p>
     </div>
     <div class="sec"><div id="xres" hidden>
       <h3 style="margin:0;color:var(--mut)">Your edited video is ready</h3>
       <div class="res" id="xfiles"></div>
-      <p class="note">Files stay on the server for about 30 minutes.</p>
     </div></div>
   </div>
 </section>
 
 <section id="clip" hidden>
   <h1>Make <span>Clips</span></h1>
-  <p class="sub">Add a movie or photo from your device, or a link. Cut the parts you want and download them. Max size: <b class="lim">2 GB</b>.</p>
   <div class="search">
     <div class="pw">
       <button class="btn pri plus" id="plus" aria-haspopup="menu" aria-expanded="false" aria-label="Add photo, video or link">+</button>
@@ -539,7 +551,6 @@ main{padding-bottom:70px!important}
       <div id="cres" hidden>
         <h3 style="margin:18px 0 0;color:var(--mut)">Your clips are ready</h3>
         <div class="res" id="cfiles"></div>
-        <p class="note">Files stay on the server for about 30 minutes.</p>
       </div>
     </div>
   </div>
@@ -547,7 +558,6 @@ main{padding-bottom:70px!important}
 
 <section id="text" hidden>
   <h1>Add <span>Text</span></h1>
-  <p class="sub">Add a photo or video, place text on it, then save or download. Max size: <b class="lim">2 GB</b>.</p>
   <div id="txsrc"></div>
   <div class="txwrap" id="txw" hidden>
     <div class="txl">
@@ -558,7 +568,6 @@ main{padding-bottom:70px!important}
           <div class="tlist" id="txlist" style="margin:0"></div>
           <div class="btns"><button class="btn pri sm" id="txAdd" type="button">+ Add text</button><button class="btn ghost sm" id="txDel" type="button">Delete text</button></div>
         </div>
-        <p class="hint" style="margin:6px 2px 4px">Drag a text on the preview to move it. Drag its round teal corner to resize it.</p>
       </div>
       <div class="txact">
         <div class="opt" id="txphoto" hidden>
@@ -567,11 +576,9 @@ main{padding-bottom:70px!important}
           <span id="txsecs" hidden><input class="field" id="txsec" type="number" min="1" max="600" value="5" style="width:78px" aria-label="Video length in seconds"> <span class="hint">seconds</span></span>
         </div>
         <div class="acts"><button class="btn pri go2" id="txSave" type="button" disabled>Save</button><button class="btn ghost go2" id="txDl" type="button" disabled>Download</button></div>
-        <p class="note">Save puts the video back into Clip when it came from there. Download saves it to your device.</p>
         <div id="txres" hidden>
           <h3 style="margin:16px 0 0;color:var(--mut)">Your file is ready</h3>
           <div class="res" id="txfiles"></div>
-          <p class="note">Files stay on the server for about 30 minutes.</p>
         </div>
       </div>
     </div>
@@ -585,7 +592,6 @@ main{padding-bottom:70px!important}
 
 <section id="shorts" hidden>
   <h1>Best <span>Shorts AI</span></h1>
-  <p class="sub">Add one long video. Clipecut listens to it, watches it, finds the strongest moments and cuts them into ready-to-share shorts. Max size: <b class="lim">2 GB</b>.</p>
   <div id="shsrc"></div>
   <div class="card" id="shw" hidden>
     <div class="top" style="display:block">
@@ -597,9 +603,9 @@ main{padding-bottom:70px!important}
       <h3>AI settings</h3>
       <div class="fr">
         <label for="shcount">Shorts</label>
-        <select class="field" id="shcount"><option value="3">3</option><option value="5" selected>5</option><option value="8">8</option></select>
+        <select class="field" id="shcount"><option value="3" selected>3</option><option value="5">5</option><option value="8">8</option></select>
         <label for="shlen">Length</label>
-        <select class="field" id="shlen"><option value="15">15 sec</option><option value="30" selected>30 sec</option><option value="45">45 sec</option><option value="60">60 sec</option></select>
+        <select class="field" id="shlen"><option value="15" selected>15 sec</option><option value="30">30 sec</option><option value="45">45 sec</option><option value="60">60 sec</option></select>
         <label for="shfmt">Format</label>
         <select class="field" id="shfmt"><option value="o">Original shape</option><option value="v">Vertical 9:16 (Shorts / Reels)</option></select>
       </div>
@@ -609,17 +615,48 @@ main{padding-bottom:70px!important}
     <div class="sec" id="shres" hidden>
       <div class="shhead"><h3 id="shcnt" style="margin:0"></h3><a class="btn pri sm" id="shzip">Download all</a></div>
       <div class="shgrid" id="shgrid"></div>
-      <p class="note">Files stay on the server for about 30 minutes. Download the shorts you like.</p>
     </div>
   </div>
 </section>
 
+<section id="wmremover" hidden>
+  <h1>Watermark <span>Remover</span></h1>
+  <div id="wrsrc"></div>
+  <div class="card" id="wrw" hidden>
+    <div class="top" style="display:block">
+      <div class="wrbox" id="wrbox"><img id="wrimg" alt="" hidden><video id="wrvid" controls playsinline preload="metadata" hidden></video><div class="wrlay" id="wrlay"></div><div class="wrdrag" id="wrdrag"></div></div>
+      <p id="wrtitle" style="font-size:1.1rem;font-weight:700;margin:12px 0 8px;overflow-wrap:anywhere"></p>
+      <div class="chips" id="wrchips"></div>
+    </div>
+    <div class="sec">
+      <h3>AI settings</h3>
+      <div class="fr">
+        <label>Detect</label>
+        <div class="seg" id="wrmode" style="flex:1;max-width:340px"><button type="button" data-v="auto" class="on">Auto AI</button><button type="button" data-v="manual">Select area</button></div>
+        <label for="wrq">Quality</label>
+        <select class="field" id="wrq"><option value="fast">Fast</option><option value="best" selected>Best</option></select>
+      </div>
+      <div class="wrtools" id="wrtools" hidden>
+        <button class="btn ghost sm" id="wrundo" type="button">Undo</button>
+        <button class="btn ghost sm" id="wrclear" type="button">Clear</button>
+        <span class="hint" id="wrcnt" style="padding:0"></span>
+      </div>
+      <button class="btn pri go" id="wrGo" type="button" disabled>REMOVE WATERMARK WITH AI</button>
+      <div class="aibox" id="wraibox" hidden><div class="orb"></div><div><b>AI is removing the watermark</b><small id="wraitxt">Starting…</small></div></div>
+    </div>
+    <div class="sec" id="wrres" hidden>
+      <h3 style="margin:0 0 12px;color:var(--mut)">Watermark removed</h3>
+      <div id="wrout"></div>
+      <a class="btn pri go" id="wrdl" style="display:block;text-align:center;text-decoration:none">Download</a>
+    </div>
+  </div>
+</section>
 <section id="history" hidden>
   <div class="head"><h2>Download History</h2><button class="btn ghost" id="clear">Clear history</button></div>
   <div class="hist" id="hist"></div>
 </section>
 
-<div class="pager" role="navigation" aria-label="Slides"><button id="pgPrev" type="button" aria-label="Previous slide">&#8249;</button><span class="dots"><button class="dot" type="button" aria-label="Home" title="Home"></button><button class="dot" type="button" aria-label="Export" title="Export"></button><button class="dot" type="button" aria-label="Clip" title="Clip"></button><button class="dot" type="button" aria-label="Text" title="Text"></button><button class="dot" type="button" aria-label="Best Shorts" title="Best Shorts"></button><button class="dot" type="button" aria-label="Download History" title="Download History"></button></span><button id="pgNext" type="button" aria-label="Next slide">&#8250;</button></div>
+<div class="pager" role="navigation" aria-label="Slides"><button id="pgPrev" type="button" aria-label="Previous slide">&#8249;</button><span class="dots"><button class="dot" type="button" aria-label="Home" title="Home"></button><button class="dot" type="button" aria-label="URL Downloader" title="URL Downloader"></button><button class="dot" type="button" aria-label="Export" title="Export"></button><button class="dot" type="button" aria-label="Clip" title="Clip"></button><button class="dot" type="button" aria-label="Text" title="Text"></button><button class="dot" type="button" aria-label="Best Shorts" title="Best Shorts"></button><button class="dot" type="button" aria-label="Watermark Remover" title="Watermark Remover"></button><button class="dot" type="button" aria-label="Download History" title="Download History"></button></span><button id="pgNext" type="button" aria-label="Next slide">&#8250;</button></div>
 </main>
 
 <script>
@@ -631,7 +668,7 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 async function api(p,o){const r=await fetch(p,o);if(!r.ok){let m="Request failed.";try{m=(await r.json()).error||m}catch{}throw new Error(m)}return r}
 
 /* navigation */
-const SLIDES=["home","downloader","export","clip","text","shorts","history"],SLIDE_NAMES={home:"Home",downloader:"URL Downloader",export:"Export",clip:"Clip",text:"Text",shorts:"Best Shorts",history:"Download History"};
+const SLIDES=["home","downloader","export","clip","text","shorts","wmremover","history"],SLIDE_NAMES={home:"Home",downloader:"URL Downloader",export:"Export",clip:"Clip",text:"Text",shorts:"Best Shorts",wmremover:"Watermark Remover",history:"Download History"};
 let slideNow=-1;
 function route(){const v=SLIDES.includes(location.hash.slice(1))?location.hash.slice(1):"home",i=SLIDES.indexOf(v),dir=slideNow<0||i===slideNow?"":(i>slideNow?"slide-r":"slide-l");
  SLIDES.forEach(x=>$("#"+x).hidden=x!==v);
@@ -647,7 +684,7 @@ $("#pgPrev").onclick=()=>goSlide(-1);$("#pgNext").onclick=()=>goSlide(1);
 document.querySelectorAll(".pager .dot").forEach((d,k)=>d.onclick=()=>{location.hash=SLIDES[k]==="home"?"":SLIDES[k]});
 /* swipe left / right on a phone to move to the next / previous slide (not while dragging inside the player, timeline, text or sliders) */
 let swX=0,swY=0,swOk=false;
-document.addEventListener("touchstart",e=>{const t=e.touches[0];swX=t.clientX;swY=t.clientY;swOk=e.touches.length===1&&!document.querySelector(".pbox.big")&&!e.target.closest(".tl,.pbox,input,textarea,select,.tw,.layers,.pgrid,.menu,.tlist,.tpan,.seg")},{passive:true});
+document.addEventListener("touchstart",e=>{const t=e.touches[0];swX=t.clientX;swY=t.clientY;swOk=e.touches.length===1&&!document.querySelector(".pbox.big")&&!e.target.closest(".tl,.pbox,.wrbox,input,textarea,select,.tw,.layers,.pgrid,.menu,.tlist,.tpan,.seg")},{passive:true});
 document.addEventListener("touchend",e=>{if(!swOk)return;swOk=false;const t=e.changedTouches[0],dx=t.clientX-swX,dy=t.clientY-swY;if(Math.abs(dx)>90&&Math.abs(dx)>Math.abs(dy)*2)goSlide(dx<0?1:-1)},{passive:true});
 document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>{location.hash=b.dataset.v==="home"?"":b.dataset.v});
 addEventListener("hashchange",route);
@@ -692,7 +729,7 @@ async function download(){
   else{
    phase("Preparing on server",0);
    S.job=(await(await api("/api/jobs",{method:"POST",headers:J,body:JSON.stringify({url:S.url,quality:S.q.id,kind:S.info.kind,wm}),...sig})).json()).id;
-   for(;;){await sleep(800);
+   for(;;){await sleep(400);
     const j=await(await api("/api/jobs/"+S.job,sig)).json();
     if(j.status==="error")throw new Error(j.error||"Preparation failed.");
     if(j.status==="cancelled")throw new DOMException("","AbortError");
@@ -908,7 +945,7 @@ $("#fvideo").onchange=e=>{const f=e.target.files[0];e.target.value="";pickFile(f
 $("#fphoto").onchange=e=>{const f=e.target.files[0];e.target.value="";pickFile(f,"image")};
 
 /* poll a server job */
-async function pollJob(id,sig,onp){for(;;){await sleep(800);
+async function pollJob(id,sig,onp){for(;;){await sleep(250);
  const j=await(await api("/api/jobs/"+id,sig)).json();
  if(j.status==="error")throw new Error(j.error||"Failed.");
  if(j.status==="cancelled")throw new DOMException("","AbortError");
@@ -1197,7 +1234,6 @@ $("#txpanel").innerHTML=`
  <div class="g"><label>Start</label><div class="r"><input class="field" type="text" data-k="start" aria-label="Start time"><button type="button" class="btn ghost sm" data-now="start">Set to now</button></div></div>
  <div class="g"><label>End</label><div class="r"><input class="field" type="text" data-k="end" aria-label="End time"><button type="button" class="btn ghost sm" data-now="end">Set to now</button></div></div>
  <div class="g"><label>Duration</label><div class="r"><input class="field" type="text" data-k="dur" aria-label="Duration"></div></div>
- <p class="hint" style="margin:0">Write time like 0:05 or 5. The text shows only between Start and End.</p>
 </div>`;
 function txTab(t){Tx.tab=t;document.querySelectorAll(".txtabs button").forEach(b=>b.classList.toggle("on",b.dataset.tab===t));
  document.querySelectorAll("#txpanel [data-g]").forEach(g=>g.classList.toggle("on",g.dataset.g===t))}
@@ -1308,6 +1344,64 @@ async function shAnalyze(){const s=SH.src;if(!s||!s.id||SH.busy)return;
  $("#shprog").hidden=true;$("#shai").hidden=true;SH.job=null;SH.busy=false;$("#shplus").disabled=false;if(lb)lb.disabled=false;shUI(false)}
 $("#shGo").onclick=shAnalyze;
 addEventListener("hashchange",()=>{if(location.hash!=="#shorts")document.querySelectorAll("#shgrid video").forEach(v=>v.pause())});
+
+
+/* ---------- Watermark Remover ---------- */
+const WR={src:null,busy:false,xhr:null,ctrl:null,job:null,blob:null,mode:"auto",regs:[]};
+$("#wrsrc").innerHTML=loaderHTML("wr",true,true);
+const wrUI=on=>{$("#wrGo").disabled=on||!(WR.src&&WR.src.id)};
+const wrIsImg=()=>!!(WR.src&&WR.src.kind==="image");
+function wrDraw(){const lay=$("#wrlay");
+ lay.replaceChildren(...WR.regs.map((r,i)=>{const d=document.createElement("div");d.className="wrreg";
+  d.style.cssText="left:"+r.x*100+"%;top:"+r.y*100+"%;width:"+r.w*100+"%;height:"+r.h*100+"%";
+  const n=document.createElement("span");n.textContent=i+1;d.appendChild(n);return d}));
+ $("#wrcnt").textContent=WR.mode==="manual"?(WR.regs.length?WR.regs.length+(WR.regs.length>1?" areas selected":" area selected"):"Draw a box over the watermark"):"";
+ $("#wrundo").disabled=$("#wrclear").disabled=!WR.regs.length||WR.busy}
+function wrMode(m){WR.mode=m;
+ document.querySelectorAll("#wrmode button").forEach(b=>b.classList.toggle("on",b.dataset.v===m));
+ $("#wrtools").hidden=m!=="manual";$("#wrbox").classList.toggle("man",m==="manual");wrDraw()}
+const WRL=makeLoader("wr",WR,{link:true,photo:true,hist:"WM REMOVE",lock:on=>{wrUI(on);wrDraw()},
+ check:s=>(s.kind==="video"||s.kind==="image")?null:"Please choose a photo or a video.",
+ onSource(s,preview){WR.src=s;WR.regs=[];$("#wrres").hidden=true;
+  const img=$("#wrimg"),vid=$("#wrvid"),im=s.kind==="image";
+  img.hidden=!im;vid.hidden=im;$("#wrbox").classList.toggle("v",!im);
+  if(im){vid.pause();vid.removeAttribute("src");img.src=preview}else{img.removeAttribute("src");vid.src=preview;vid.load()}
+  $("#wrtitle").textContent=s.name;
+  $("#wrchips").replaceChildren(...[im?"Photo":"Video",s.size&&fmt(s.size),s.duration&&("Duration "+T(s.duration))].filter(Boolean).map(t=>{const c=document.createElement("span");c.className="chip";c.textContent=t;return c}));
+  wrDraw();$("#wrw").hidden=false},
+ onReady(){wrUI(false)},onFail(){$("#wrw").hidden=true}});
+document.querySelectorAll("#wrmode button").forEach(b=>b.onclick=()=>{if(!WR.busy)wrMode(b.dataset.v)});
+$("#wrundo").onclick=()=>{WR.regs.pop();wrDraw()};
+$("#wrclear").onclick=()=>{WR.regs=[];wrDraw()};
+{const dr=$("#wrdrag");let a=null,tmp=null;
+ const pt=e=>{const b=$("#wrbox").getBoundingClientRect();return{x:Math.min(1,Math.max(0,(e.clientX-b.left)/b.width)),y:Math.min(1,Math.max(0,(e.clientY-b.top)/b.height))}};
+ const box=(p,q)=>({x:Math.min(p.x,q.x),y:Math.min(p.y,q.y),w:Math.abs(p.x-q.x),h:Math.abs(p.y-q.y)});
+ dr.addEventListener("pointerdown",e=>{if(WR.mode!=="manual"||WR.busy)return;
+  if(WR.regs.length>=6){$("#wrcnt").textContent="Maximum 6 areas";return}
+  a=pt(e);dr.setPointerCapture(e.pointerId);tmp=document.createElement("div");tmp.className="wrreg";$("#wrlay").appendChild(tmp);e.preventDefault()});
+ dr.addEventListener("pointermove",e=>{if(!a)return;const r=box(a,pt(e));tmp.style.cssText="left:"+r.x*100+"%;top:"+r.y*100+"%;width:"+r.w*100+"%;height:"+r.h*100+"%"});
+ const end=e=>{if(!a)return;const r=box(a,pt(e));a=null;tmp=null;if(r.w>.01&&r.h>.01)WR.regs.push(r);wrDraw()};
+ dr.addEventListener("pointerup",end);dr.addEventListener("pointercancel",()=>{a=null;tmp=null;wrDraw()})}
+function wrShow(id,files){const f=files[0],im=wrIsImg(),url="/api/jobs/"+id+"/files/"+f.i,out=$("#wrout");
+ const m=document.createElement(im?"img":"video");m.src=url+"?inline=1";
+ if(im)m.alt="";else{m.controls=true;m.playsInline=true}
+ out.replaceChildren(m);
+ const a=$("#wrdl");a.href=url;a.download=f.name;a.title=fmt(f.size);
+ $("#wrres").hidden=false;$("#wrres").scrollIntoView({behavior:"smooth",block:"start"})}
+async function wrRun(){const s=WR.src;if(!s||!s.id||WR.busy)return;
+ if(WR.mode==="manual"&&!WR.regs.length)return WRL.say("Draw a box over the watermark first.",1);
+ WR.busy=true;$("#wrGo").disabled=true;$("#wrplus").disabled=true;const lb=$("#wrload");if(lb)lb.disabled=true;wrDraw();
+ $("#wrres").hidden=true;WRL.say("");$("#wrprog").hidden=false;$("#wraibox").hidden=false;$("#wraitxt").textContent="Starting…";setProg("wr","Starting…",null);
+ WR.ctrl=new AbortController();const sig={signal:WR.ctrl.signal};WR.job=null;
+ try{const body={source:s.id,kind:s.kind,mode:WR.mode,regions:WR.mode==="manual"?WR.regs:[],quality:$("#wrq").value};
+  WR.job=(await(await api("/api/watermark/remove",{method:"POST",headers:J,body:JSON.stringify(body),...sig})).json()).id;
+  const j=await pollJob(WR.job,sig,j=>{const t=j.status==="queued"?"Waiting…":(j.phase||"Removing watermark");$("#wraitxt").textContent=t;setProg("wr",t,j.status==="processing"?j.pct:null)});
+  wrShow(WR.job,j.files);
+  addHist({name:s.name,format:"WM REMOVE",quality:WR.mode==="auto"?"Auto AI":"Manual",date:new Date().toISOString(),status:"Completed"})}
+ catch(e){if(e.name==="AbortError")WRL.say("Cancelled.");else{WRL.say(e.message==="Request failed."?"Watermark Remover is not available on the server yet.":e.message,1);addHist({name:s.name,format:"WM REMOVE",quality:"",date:new Date().toISOString(),status:"Failed"})}}
+ $("#wrprog").hidden=true;$("#wraibox").hidden=true;WR.job=null;WR.busy=false;$("#wrplus").disabled=false;if(lb)lb.disabled=false;wrUI(false);wrDraw()}
+$("#wrGo").onclick=wrRun;
+addEventListener("hashchange",()=>{if(location.hash!=="#wmremover")document.querySelectorAll("#wrvid,#wrout video").forEach(v=>v.pause())});
 
 /* sidebar 3-dot menu */
 {const b=$("#sdots"),m=$("#smenu"),close=()=>{m.hidden=true;b.setAttribute("aria-expanded","false")};

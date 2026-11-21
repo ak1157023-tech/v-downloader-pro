@@ -1362,7 +1362,7 @@ function wrMode(m){WR.mode=m;
  $("#wrtools").hidden=m!=="manual";$("#wrbox").classList.toggle("man",m==="manual");wrDraw()}
 const WRL=makeLoader("wr",WR,{link:true,photo:true,hist:"WM REMOVE",lock:on=>{wrUI(on);wrDraw()},
  check:s=>(s.kind==="video"||s.kind==="image")?null:"Please choose a photo or a video.",
- onSource(s,preview){WR.src=s;WR.regs=[];$("#wrres").hidden=true;
+ onSource(s,preview){WR.src=s;WR.prev=preview;WR.regs=[];$("#wrres").hidden=true;
   const img=$("#wrimg"),vid=$("#wrvid"),im=s.kind==="image";
   img.hidden=!im;vid.hidden=im;$("#wrbox").classList.toggle("v",!im);
   if(im){vid.pause();vid.removeAttribute("src");img.src=preview}else{img.removeAttribute("src");vid.src=preview;vid.load()}
@@ -1388,17 +1388,96 @@ function wrShow(id,files){const f=files[0],im=wrIsImg(),url="/api/jobs/"+id+"/fi
  out.replaceChildren(m);
  const a=$("#wrdl");a.href=url;a.download=f.name;a.title=fmt(f.size);
  $("#wrres").hidden=false;$("#wrres").scrollIntoView({behavior:"smooth",block:"start"})}
+/* ---- local (in-browser) remover: used when the server has no AI endpoint ---- */
+function wrInpaint(ctx,W,H,r,iters,noise){
+ const x0=Math.max(0,Math.round(r.x*W)),y0=Math.max(0,Math.round(r.y*H));
+ const rw=Math.min(W-x0,Math.max(1,Math.round(r.w*W))),rh=Math.min(H-y0,Math.max(1,Math.round(r.h*H)));
+ if(rw<1||rh<1)return;
+ const M=4,mx0=Math.max(0,x0-M),my0=Math.max(0,y0-M),mx1=Math.min(W,x0+rw+M),my1=Math.min(H,y0+rh+M),sw=mx1-mx0;
+ const src=ctx.getImageData(mx0,my0,sw,my1-my0).data;
+ const ok=(x,y)=>x>=mx0&&x<mx1&&y>=my0&&y<my1;
+ // average of up to 3 known pixels just outside each edge
+ const edge=(k,len)=>{const o=new Float32Array(len*3),has=new Uint8Array(len);
+  for(let t=0;t<len;t++){let n=0,c0=0,c1=0,c2=0;
+   for(let d=1;d<=3;d++){let x,y;
+    if(k===0){x=x0-d;y=y0+t}else if(k===1){x=x0+rw-1+d;y=y0+t}else if(k===2){x=x0+t;y=y0-d}else{x=x0+t;y=y0+rh-1+d}
+    if(!ok(x,y))continue;const i=((y-my0)*sw+(x-mx0))*4;c0+=src[i];c1+=src[i+1];c2+=src[i+2];n++}
+   if(n){o[t*3]=c0/n;o[t*3+1]=c1/n;o[t*3+2]=c2/n;has[t]=1}}
+  return{o,has,any:has.some(v=>v)}};
+ let L=edge(0,rh),R=edge(1,rh),T=edge(2,rw),B=edge(3,rw);
+ const fix=(a,b)=>{if(!a.any&&b.any)return b;return a};
+ const L2=fix(L,R),R2=fix(R,L),T2=fix(T,B),B2=fix(B,T);L=L2;R=R2;T=T2;B=B2;
+ if(!L.any&&!T.any){return}
+ const F=new Float32Array(rw*rh*3);
+ for(let j=0;j<rh;j++)for(let i=0;i<rw;i++){const fx=(i+.5)/rw,fy=(j+.5)/rh;
+  for(let c=0;c<3;c++){const l=L.any?L.o[j*3+c]:0,r2=R.any?R.o[j*3+c]:0,t=T.any?T.o[i*3+c]:0,b=B.any?B.o[i*3+c]:0;
+   const hor=L.any?l*(1-fx)+r2*fx:null,ver=T.any?t*(1-fy)+b*fy:null;
+   F[(j*rw+i)*3+c]=hor==null?ver:ver==null?hor:(hor+ver)/2}}
+ for(let it=0;it<iters;it++)for(let j=0;j<rh;j++)for(let i=0;i<rw;i++)for(let c=0;c<3;c++){
+  const l=i>0?F[(j*rw+i-1)*3+c]:(L.any?L.o[j*3+c]:F[(j*rw+i)*3+c]),
+   r2=i<rw-1?F[(j*rw+i+1)*3+c]:(R.any?R.o[j*3+c]:F[(j*rw+i)*3+c]),
+   t=j>0?F[((j-1)*rw+i)*3+c]:(T.any?T.o[i*3+c]:F[(j*rw+i)*3+c]),
+   b=j<rh-1?F[((j+1)*rw+i)*3+c]:(B.any?B.o[i*3+c]:F[(j*rw+i)*3+c]);
+  F[(j*rw+i)*3+c]=(l+r2+t+b)/4}
+ const out=ctx.createImageData(rw,rh);
+ for(let k=0;k<rw*rh;k++){const n=noise?(Math.random()-.5)*noise:0;
+  out.data[k*4]=F[k*3]+n;out.data[k*4+1]=F[k*3+1]+n;out.data[k*4+2]=F[k*3+2]+n;out.data[k*4+3]=255}
+ ctx.putImageData(out,x0,y0)}
+const wrBase=n=>String(n||"file").replace(/\.[^.]+$/,"");
+async function wrLocal(){
+ if(!WR.regs.length){wrMode("manual");const e=new Error("Auto AI needs the server. Draw a box over the watermark, then press the button again.");e.soft=true;throw e}
+ const fast=$("#wrq").value==="fast";
+ if(wrIsImg()){const img=$("#wrimg");if(img.decode)await img.decode().catch(()=>{});
+  const W=img.naturalWidth,H=img.naturalHeight,cv=document.createElement("canvas");cv.width=W;cv.height=H;
+  const ctx=cv.getContext("2d",{willReadFrequently:true});ctx.drawImage(img,0,0);
+  $("#wraitxt").textContent="Removing watermark";setProg("wr","Removing watermark",null);await sleep(30);
+  WR.regs.forEach(r=>wrInpaint(ctx,W,H,r,fast?60:220,3));
+  const blob=await new Promise(res=>cv.toBlob(res,"image/png"));
+  return{blob,name:wrBase(WR.src.name)+"_clean.png",img:true}}
+ const v=document.createElement("video");v.src=WR.prev;v.playsInline=true;v.preload="auto";
+ await new Promise((res,rej)=>{v.onloadedmetadata=res;v.onerror=()=>rej(new Error("This video cannot be read in the browser. Try MP4 or WebM."))});
+ const W=v.videoWidth,H=v.videoHeight,cv=document.createElement("canvas");cv.width=W;cv.height=H;
+ const ctx=cv.getContext("2d",{willReadFrequently:true}),stream=cv.captureStream(30);
+ try{const ac=new (window.AudioContext||window.webkitAudioContext)(),sn=ac.createMediaElementSource(v),ds=ac.createMediaStreamDestination();sn.connect(ds);ds.stream.getAudioTracks().forEach(t=>stream.addTrack(t))}catch{}
+ if(!window.MediaRecorder)throw new Error("This browser cannot record video. Use Chrome, Edge or Firefox.");
+ const mime=["video/webm;codecs=vp9,opus","video/webm;codecs=vp8,opus","video/webm"].find(m=>MediaRecorder.isTypeSupported(m))||"";
+ const rec=new MediaRecorder(stream,mime?{mimeType:mime,videoBitsPerSecond:8e6}:{}),chunks=[];
+ rec.ondataavailable=e=>{if(e.data.size)chunks.push(e.data)};
+ const stopped=new Promise(r=>rec.onstop=r);
+ const frame=()=>{ctx.drawImage(v,0,0,W,H);WR.regs.forEach(r=>wrInpaint(ctx,W,H,r,fast?0:6,0));
+  const pct=v.duration?Math.min(99,v.currentTime/v.duration*100):null;
+  $("#wraitxt").textContent="Removing watermark "+Math.round(pct||0)+"%";setProg("wr","Removing watermark (keep this tab open)",pct)};
+ const ended=new Promise(r=>v.onended=r);
+ rec.start(500);
+ try{await v.play()}catch{v.muted=true;await v.play()}
+ let alive=true;ended.then(()=>alive=false);
+ if(v.requestVideoFrameCallback){const loop=()=>{if(!alive||WR.stop)return;frame();v.requestVideoFrameCallback(loop)};v.requestVideoFrameCallback(loop)}
+ else{const loop=()=>{if(!alive||WR.stop)return;frame();requestAnimationFrame(loop)};requestAnimationFrame(loop)}
+ await Promise.race([ended,new Promise(r=>{const t=setInterval(()=>{if(WR.stop){clearInterval(t);r()}},150)})]);
+ alive=false;v.pause();rec.stop();await stopped;
+ if(WR.stop)throw new DOMException("","AbortError");
+ return{blob:new Blob(chunks,{type:"video/webm"}),name:wrBase(WR.src.name)+"_clean.webm",img:false}}
+function wrShowLocal(r){const out=$("#wrout"),url=URL.createObjectURL(r.blob);
+ if(WR.outUrl)URL.revokeObjectURL(WR.outUrl);WR.outUrl=url;
+ const m=document.createElement(r.img?"img":"video");m.src=url;if(r.img)m.alt="";else{m.controls=true;m.playsInline=true}
+ out.replaceChildren(m);const a=$("#wrdl");a.href=url;a.download=r.name;a.title=fmt(r.blob.size);
+ $("#wrres").hidden=false;$("#wrres").scrollIntoView({behavior:"smooth",block:"start"})}
+$("#wrcancel").addEventListener("click",()=>{if(WR.busy)WR.stop=true});
 async function wrRun(){const s=WR.src;if(!s||!s.id||WR.busy)return;
  if(WR.mode==="manual"&&!WR.regs.length)return WRL.say("Draw a box over the watermark first.",1);
- WR.busy=true;$("#wrGo").disabled=true;$("#wrplus").disabled=true;const lb=$("#wrload");if(lb)lb.disabled=true;wrDraw();
+ WR.busy=true;WR.stop=false;$("#wrGo").disabled=true;$("#wrplus").disabled=true;const lb=$("#wrload");if(lb)lb.disabled=true;wrDraw();
  $("#wrres").hidden=true;WRL.say("");$("#wrprog").hidden=false;$("#wraibox").hidden=false;$("#wraitxt").textContent="Starting…";setProg("wr","Starting…",null);
  WR.ctrl=new AbortController();const sig={signal:WR.ctrl.signal};WR.job=null;
+ const fail=e=>{if(e.name==="AbortError")WRL.say("Cancelled.");else{WRL.say(e.message,1);if(!e.soft)addHist({name:s.name,format:"WM REMOVE",quality:"",date:new Date().toISOString(),status:"Failed"})}};
+ let local=false;
  try{const body={source:s.id,kind:s.kind,mode:WR.mode,regions:WR.mode==="manual"?WR.regs:[],quality:$("#wrq").value};
   WR.job=(await(await api("/api/watermark/remove",{method:"POST",headers:J,body:JSON.stringify(body),...sig})).json()).id;
   const j=await pollJob(WR.job,sig,j=>{const t=j.status==="queued"?"Waiting…":(j.phase||"Removing watermark");$("#wraitxt").textContent=t;setProg("wr",t,j.status==="processing"?j.pct:null)});
   wrShow(WR.job,j.files);
   addHist({name:s.name,format:"WM REMOVE",quality:WR.mode==="auto"?"Auto AI":"Manual",date:new Date().toISOString(),status:"Completed"})}
- catch(e){if(e.name==="AbortError")WRL.say("Cancelled.");else{WRL.say(e.message==="Request failed."?"Watermark Remover is not available on the server yet.":e.message,1);addHist({name:s.name,format:"WM REMOVE",quality:"",date:new Date().toISOString(),status:"Failed"})}}
+ catch(e){if(e.name!=="AbortError"&&!WR.job&&(e.message==="Request failed."||e.name==="TypeError"))local=true;else fail(e)}
+ if(local){try{const r=await wrLocal();wrShowLocal(r);
+   addHist({name:s.name,format:"WM REMOVE",quality:"Manual",date:new Date().toISOString(),status:"Completed"})}catch(e){fail(e)}}
  $("#wrprog").hidden=true;$("#wraibox").hidden=true;WR.job=null;WR.busy=false;$("#wrplus").disabled=false;if(lb)lb.disabled=false;wrUI(false);wrDraw()}
 $("#wrGo").onclick=wrRun;
 addEventListener("hashchange",()=>{if(location.hash!=="#wmremover")document.querySelectorAll("#wrvid,#wrout video").forEach(v=>v.pause())});

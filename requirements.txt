@@ -1,4 +1,4 @@
-fastapi
-uvicorn
-httpx
-edge-tts
+flask
+requests
+yt-dlp
+gunicorn

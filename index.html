@@ -1533,12 +1533,12 @@ async function cgStatus(){
  const box=$("#cgstatbox");
  try{const r=await fetch("/api/cartoon/status");if(!r.ok)throw 0;const d=await r.json();
   CG.ready=!!d.ready;box.hidden=CG.ready;
-  if(!CG.ready){$("#cgstat").textContent="Setup needed on the server: "+((d.missing||[]).join(", ")||"unknown")+". Add keys in Render → Environment."}
-  CG.est=d.estimate||null;CG.free=!!d.free;CG.eta=d.eta_min||null}
+  if(!CG.ready){$("#cgstat").textContent="Missing API keys on the server: "+((d.missing||[]).join(", ")||"unknown")+". Add them in Render → Environment."}
+  CG.est=d.estimate||null}
  catch{CG.ready=false;box.hidden=false;$("#cgstat").textContent="The Cartoon backend is not installed on the server yet."}
  cgEst();cgSync()}
-function cgEst(){const m=CG.opt.minutes,e=$("#cgest"),est=CG.est&&CG.est[m];
- e.hidden=!est;if(est)e.textContent=CG.free?"Free mode: no API cost. Takes about "+((CG.eta||{})[m]||"?")+" min (free images are made slowly).":"Estimated API cost for this video: about $"+est+" (billed by your API providers)"}
+function cgEst(){const e=$("#cgest"),est=CG.est&&CG.est[CG.opt.minutes];
+ e.hidden=!est;if(est)e.textContent="Estimated API cost for this video: about $"+est+" (billed by your API providers)"}
 document.querySelectorAll("#cartoon .seg").forEach(g=>g.addEventListener("click",e=>{const b=e.target.closest("button");if(!b||CG.busy)return;
  g.querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b));CG.opt[g.dataset.k]=b.dataset.v;cgEst()}));
 $("#cgstory").addEventListener("input",cgSync);

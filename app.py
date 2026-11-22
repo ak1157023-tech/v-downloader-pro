@@ -10,21 +10,11 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.responses import FileResponse
 
+from cartoon_routes import router as cartoon_router
 
 BASE = Path(__file__).parent
 app = FastAPI(title="VELTRIX AI")
-
-# AI Cartoon Studio: if it cannot load (e.g. a missing package) the site still starts and shows the reason.
-try:
-    from cartoon_routes import router as cartoon_router
-
-    app.include_router(cartoon_router)
-except Exception as exc:  # noqa: BLE001
-    CARTOON_ERROR = f"{type(exc).__name__}: {exc}"
-
-    @app.get("/api/cartoon/status")
-    def cartoon_status_failed():
-        return {"ready": False, "missing": ["Cartoon backend failed to load -> " + CARTOON_ERROR]}
+app.include_router(cartoon_router)  # AI Cartoon Studio
 
 ENCODERS = {
     "h264_nvenc": "NVIDIA NVENC (H.264)",

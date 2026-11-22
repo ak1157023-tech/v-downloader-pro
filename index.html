@@ -407,18 +407,6 @@ main .sub, main .section-description, main .section-desc, main .title-descriptio
 .wrtools{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 12px}
 #wrout{border-radius:14px;overflow:hidden;background:#000;margin-bottom:14px;line-height:0;text-align:center}
 #wrout img,#wrout video{max-width:100%;max-height:62vh}
-
-/* ===== AI Cartoon Studio ===== */
-#cartoon .aibox{border-color:#FF6BD655;background:linear-gradient(90deg,#FF6BD614,transparent)}
-#cartoon .orb{background:radial-gradient(circle at 30% 30%,#fff,#FF6BD6 45%,#7a1f6a)}
-#cgstory{width:100%;min-height:170px;resize:vertical;border-radius:14px;padding:14px;font:inherit;line-height:1.55}
-.cgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px;margin:14px 0}
-.cgrid label{display:block;font-size:.8rem;margin-bottom:6px;opacity:.75}
-.cgrid .seg{width:100%}
-.cbar{height:8px;border-radius:8px;background:#ffffff14;overflow:hidden;margin:12px 0}
-.cbar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#FFB86B,#FF6BD6);transition:width .3s}
-#cgvid{width:100%;max-height:70vh;border-radius:14px;background:#000;margin-bottom:14px}
-#cgvid.v{max-width:360px;display:block;margin:0 auto 14px}
 </style>
 </head>
 <body>
@@ -444,7 +432,6 @@ main .sub, main .section-description, main .section-desc, main .title-descriptio
     <a class="tool" href="#text"><span class="ti"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7V5h16v2M9 20h6M12 5v15"/></svg></span><b>Text</b><i class="go-ar">Open &rarr;</i></a>
     <a class="tool pk" href="#shorts"><span class="ti"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg></span><b>Best Shorts AI</b><i class="go-ar">Open &rarr;</i></a>
     <a class="tool" href="#wmremover"><span class="ti"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3s6 6.2 6 10.5a6 6 0 0 1-12 0C6 9.2 12 3 12 3z"/><path d="M4 4l16 16"/></svg></span><b>Watermark Remover</b><i class="go-ar">Open &rarr;</i></a>
-    <a class="tool" href="#cartoon"><span class="ti"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="14" rx="3"/><path d="M3 11h18M8 6l3 5M14 6l3 5"/></svg></span><b>AI Cartoon Studio</b><i class="go-ar">Open &rarr;</i></a>
   </div>
 </section>
 
@@ -664,41 +651,12 @@ main .sub, main .section-description, main .section-desc, main .title-descriptio
     </div>
   </div>
 </section>
-<section id="cartoon" hidden>
-  <h1>AI Cartoon <span>Studio</span></h1>
-  <div class="card"><div class="sec">
-    <div class="aibox" id="cgstatbox" hidden style="margin:0 0 14px"><div class="orb"></div><div><b id="cgstattl">Setup needed</b><small id="cgstat"></small></div></div>
-    <h3>Story</h3>
-    <textarea class="field" id="cgstory" maxlength="6000" placeholder="Write your story here…"></textarea>
-    <div class="hint" id="cgcnt" style="padding:4px 2px">0 / 6000</div>
-    <div class="cgrid">
-      <div><label>Language</label><div class="seg" data-k="lang"><button type="button" data-v="bn" class="on">Bangla</button><button type="button" data-v="en">English</button></div></div>
-      <div><label>Voice</label><div class="seg" data-k="voice"><button type="button" data-v="male" class="on">Male</button><button type="button" data-v="female">Female</button></div></div>
-      <div><label>Style</label><div class="seg" data-k="style"><button type="button" data-v="2d" class="on">2D Cartoon</button><button type="button" data-v="3d">3D Cartoon</button></div></div>
-      <div><label>Video ratio</label><div class="seg" data-k="ratio"><button type="button" data-v="9:16" class="on">9:16</button><button type="button" data-v="16:9">16:9</button></div></div>
-      <div><label>Duration</label><div class="seg" data-k="minutes"><button type="button" data-v="1" class="on">1 min</button><button type="button" data-v="3">3 min</button><button type="button" data-v="5">5 min</button></div></div>
-    </div>
-    <div class="hint" id="cgest" style="padding:0 2px 12px" hidden></div>
-    <button class="btn pri go" id="cgGo" type="button" disabled>GENERATE CARTOON VIDEO</button>
-    <div id="cgprog" hidden>
-      <div class="aibox" style="margin-top:14px"><div class="orb"></div><div><b id="cgtitle">Starting…</b><small id="cgtxt"></small></div></div>
-      <div class="cbar"><i id="cgbar"></i></div>
-      <button class="btn ghost sm" id="cgcancel" type="button">Cancel</button>
-    </div>
-    <p class="hint" id="cgmsg" style="padding:10px 2px 0"></p>
-  </div>
-  <div class="sec" id="cgres" hidden>
-    <h3 style="margin:0 0 12px;color:var(--mut)">Your cartoon video</h3>
-    <video id="cgvid" controls playsinline></video>
-    <a class="btn pri go" id="cgdl" style="display:block;text-align:center;text-decoration:none">Download MP4</a>
-  </div></div>
-</section>
 <section id="history" hidden>
   <div class="head"><h2>Download History</h2><button class="btn ghost" id="clear">Clear history</button></div>
   <div class="hist" id="hist"></div>
 </section>
 
-<div class="pager" role="navigation" aria-label="Slides"><button id="pgPrev" type="button" aria-label="Previous slide">&#8249;</button><span class="dots"><button class="dot" type="button" aria-label="Home" title="Home"></button><button class="dot" type="button" aria-label="URL Downloader" title="URL Downloader"></button><button class="dot" type="button" aria-label="Export" title="Export"></button><button class="dot" type="button" aria-label="Clip" title="Clip"></button><button class="dot" type="button" aria-label="Text" title="Text"></button><button class="dot" type="button" aria-label="Best Shorts" title="Best Shorts"></button><button class="dot" type="button" aria-label="Watermark Remover" title="Watermark Remover"></button><button class="dot" type="button" aria-label="AI Cartoon Studio" title="AI Cartoon Studio"></button><button class="dot" type="button" aria-label="Download History" title="Download History"></button></span><button id="pgNext" type="button" aria-label="Next slide">&#8250;</button></div>
+<div class="pager" role="navigation" aria-label="Slides"><button id="pgPrev" type="button" aria-label="Previous slide">&#8249;</button><span class="dots"><button class="dot" type="button" aria-label="Home" title="Home"></button><button class="dot" type="button" aria-label="URL Downloader" title="URL Downloader"></button><button class="dot" type="button" aria-label="Export" title="Export"></button><button class="dot" type="button" aria-label="Clip" title="Clip"></button><button class="dot" type="button" aria-label="Text" title="Text"></button><button class="dot" type="button" aria-label="Best Shorts" title="Best Shorts"></button><button class="dot" type="button" aria-label="Watermark Remover" title="Watermark Remover"></button><button class="dot" type="button" aria-label="Download History" title="Download History"></button></span><button id="pgNext" type="button" aria-label="Next slide">&#8250;</button></div>
 </main>
 
 <script>
@@ -710,7 +668,7 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 async function api(p,o){const r=await fetch(p,o);if(!r.ok){let m="Request failed.";try{m=(await r.json()).error||m}catch{}throw new Error(m)}return r}
 
 /* navigation */
-const SLIDES=["home","downloader","export","clip","text","shorts","wmremover","cartoon","history"],SLIDE_NAMES={home:"Home",downloader:"URL Downloader",export:"Export",clip:"Clip",text:"Text",shorts:"Best Shorts",wmremover:"Watermark Remover",cartoon:"AI Cartoon Studio",history:"Download History"};
+const SLIDES=["home","downloader","export","clip","text","shorts","wmremover","history"],SLIDE_NAMES={home:"Home",downloader:"URL Downloader",export:"Export",clip:"Clip",text:"Text",shorts:"Best Shorts",wmremover:"Watermark Remover",history:"Download History"};
 let slideNow=-1;
 function route(){const v=SLIDES.includes(location.hash.slice(1))?location.hash.slice(1):"home",i=SLIDES.indexOf(v),dir=slideNow<0||i===slideNow?"":(i>slideNow?"slide-r":"slide-l");
  SLIDES.forEach(x=>$("#"+x).hidden=x!==v);
@@ -1523,42 +1481,6 @@ async function wrRun(){const s=WR.src;if(!s||!s.id||WR.busy)return;
  $("#wrprog").hidden=true;$("#wraibox").hidden=true;WR.job=null;WR.busy=false;$("#wrplus").disabled=false;if(lb)lb.disabled=false;wrUI(false);wrDraw()}
 $("#wrGo").onclick=wrRun;
 addEventListener("hashchange",()=>{if(location.hash!=="#wmremover")document.querySelectorAll("#wrvid,#wrout video").forEach(v=>v.pause())});
-
-
-/* ---------- AI Cartoon Studio ---------- */
-const CG={opt:{lang:"bn",voice:"male",style:"2d",ratio:"9:16",minutes:"1"},ready:false,busy:false,job:null,stop:false};
-const cgMsg=(t,err)=>{const m=$("#cgmsg");m.textContent=t||"";m.style.color=err?"#ff8a8a":""};
-function cgSync(){$("#cgGo").disabled=CG.busy||!CG.ready||$("#cgstory").value.trim().length<20;$("#cgcnt").textContent=$("#cgstory").value.length+" / 6000"}
-async function cgStatus(){
- const box=$("#cgstatbox");
- try{const r=await fetch("/api/cartoon/status");if(!r.ok)throw 0;const d=await r.json();
-  CG.ready=!!d.ready;box.hidden=CG.ready;
-  if(!CG.ready){$("#cgstat").textContent="Missing API keys on the server: "+((d.missing||[]).join(", ")||"unknown")+". Add them in Render → Environment."}
-  CG.est=d.estimate||null}
- catch{CG.ready=false;box.hidden=false;$("#cgstat").textContent="The Cartoon backend is not installed on the server yet."}
- cgEst();cgSync()}
-function cgEst(){const e=$("#cgest"),est=CG.est&&CG.est[CG.opt.minutes];
- e.hidden=!est;if(est)e.textContent="Estimated API cost for this video: about $"+est+" (billed by your API providers)"}
-document.querySelectorAll("#cartoon .seg").forEach(g=>g.addEventListener("click",e=>{const b=e.target.closest("button");if(!b||CG.busy)return;
- g.querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b));CG.opt[g.dataset.k]=b.dataset.v;cgEst()}));
-$("#cgstory").addEventListener("input",cgSync);
-addEventListener("hashchange",()=>{if(location.hash==="#cartoon")cgStatus();else $("#cgvid").pause()});
-if(location.hash==="#cartoon")cgStatus();
-async function cgRun(){if(CG.busy||!CG.ready)return;
- CG.busy=true;CG.stop=false;cgSync();cgMsg("");$("#cgres").hidden=true;$("#cgprog").hidden=false;$("#cgbar").style.width="0%";$("#cgtitle").textContent="Starting…";$("#cgtxt").textContent="";
- const ctrl=new AbortController(),name=$("#cgstory").value.trim().slice(0,40);
- try{CG.job=(await(await api("/api/cartoon/generate",{method:"POST",headers:J,signal:ctrl.signal,body:JSON.stringify({story:$("#cgstory").value.trim(),...CG.opt})})).json()).id;
-  const j=await pollJob(CG.job,{signal:ctrl.signal},j=>{if(CG.stop)ctrl.abort();
-   $("#cgtitle").textContent=j.status==="queued"?"Waiting in queue…":(j.phase||"Working…");$("#cgtxt").textContent=j.detail||"";
-   if(typeof j.pct==="number")$("#cgbar").style.width=j.pct+"%"});
-  const f=j.files[0],url="/api/jobs/"+CG.job+"/files/"+f.i,v=$("#cgvid");
-  v.className=CG.opt.ratio==="9:16"?"v":"";v.src=url+"?inline=1";$("#cgdl").href=url;$("#cgdl").download=f.name||"cartoon.mp4";
-  $("#cgres").hidden=false;$("#cgres").scrollIntoView({behavior:"smooth",block:"start"});
-  addHist({name:"Cartoon: "+name,format:"CARTOON",quality:CG.opt.style.toUpperCase()+" "+CG.opt.ratio,date:new Date().toISOString(),status:"Completed"})}
- catch(e){if(e.name==="AbortError")cgMsg("Cancelled.");else{cgMsg(e.message==="Request failed."?"Could not start. Check the server.":e.message,1);addHist({name:"Cartoon: "+name,format:"CARTOON",quality:"",date:new Date().toISOString(),status:"Failed"})}}
- $("#cgprog").hidden=true;CG.busy=false;CG.job=null;cgSync()}
-$("#cgGo").onclick=cgRun;
-$("#cgcancel").onclick=()=>{CG.stop=true;if(CG.job)api("/api/jobs/"+CG.job,{method:"DELETE"}).catch(()=>{})};
 
 /* sidebar 3-dot menu */
 {const b=$("#sdots"),m=$("#smenu"),close=()=>{m.hidden=true;b.setAttribute("aria-expanded","false")};

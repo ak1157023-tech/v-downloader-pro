@@ -5,10 +5,12 @@ Pipeline ("motion-comic"): story -> script (Claude) -> scene images (fal FLUX)
 -> background music -> final MP4.
 
 No web framework in this file, so it can be tested on its own.
-Needed environment variables (Render -> Environment):
-    ANTHROPIC_API_KEY   story -> script
-    FAL_KEY             scene images
-Optional: CARTOON_LLM_MODEL, CARTOON_IMAGE_MODEL, CARTOON_FONT_BN, CARTOON_FONT_EN, CARTOON_DIR
+FREE MODE (no cost): 
+    GEMINI_API_KEY      free key from aistudio.google.com (no credit card)  -> story -> script
+    scene images        Pollinations (no key, about 1 image every 15 s)
+    voice               edge-tts (no key)
+PAID upgrades (optional, faster / better): ANTHROPIC_API_KEY (script), FAL_KEY (images).
+Other optional: CARTOON_LLM_MODEL, CARTOON_GEMINI_MODEL, CARTOON_IMAGE_MODEL, CARTOON_FONT_BN, CARTOON_FONT_EN, CARTOON_DIR
 """
 import asyncio
 import json
@@ -31,7 +33,10 @@ ROOT.mkdir(parents=True, exist_ok=True)
 
 JOBS = {}                      # job id -> job dict
 GATE = threading.Semaphore(1)  # one video at a time (protects RAM on small servers)
-REQUIRED_KEYS = ("ANTHROPIC_API_KEY", "FAL_KEY")
+GEMINI_MODELS = [m for m in (os.environ.get("CARTOON_GEMINI_MODEL"), "gemini-flash-latest", "gemini-3.5-flash", "gemini-2.5-flash") if m]
+FREE_GAP = float(os.environ.get("CARTOON_FREE_GAP", "16"))  # seconds between free image requests
+_free_lock = threading.Lock()
+_free_last = [0.0]
 LLM_MODEL = os.environ.get("CARTOON_LLM_MODEL", "claude-sonnet-5-5")
 IMAGE_MODEL = os.environ.get("CARTOON_IMAGE_MODEL", "fal-ai/flux/schnell")
 FPS = 25
@@ -54,17 +59,36 @@ class Cancelled(Exception):
 
 
 # --------------------------------------------------------------------------- status
+def script_provider():
+    if os.environ.get("ANTHROPIC_API_KEY"):
+        return "claude"
+    if os.environ.get("GEMINI_API_KEY"):
+        return "gemini"
+    return None
+
+
+def image_provider():
+    return "fal" if os.environ.get("FAL_KEY") else "pollinations"
+
+
 def status():
-    missing = [k for k in REQUIRED_KEYS if not os.environ.get(k)]
+    missing = []
+    if not script_provider():
+        missing.append("GEMINI_API_KEY (free key from aistudio.google.com, no card needed)")
     if not shutil.which("ffmpeg"):
         missing.append("ffmpeg (install it on the server)")
     try:
         import edge_tts  # noqa: F401
     except Exception:
         missing.append("edge-tts (add it to requirements.txt)")
-    # rough numbers: scenes x image price + one script call. Check your providers' pricing pages.
-    est = {m: f"{scene_count(int(m)) * 0.01 + 0.10:.2f}" for m in ("1", "3", "5")}
-    return {"ready": not missing, "missing": missing, "estimate": est}
+    free = script_provider() != "claude" and image_provider() == "pollinations"
+    est, eta = {}, {}
+    for m in ("1", "3", "5"):
+        n = scene_count(int(m))
+        est[m] = "0.00" if free else f"{n * 0.01 + 0.10:.2f}"
+        eta[m] = round(n * (FREE_GAP if image_provider() == "pollinations" else 6) / 60 + 1 + n * 0.15)
+    return {"ready": not missing, "missing": missing, "estimate": est, "eta_min": eta, "free": free,
+            "script": script_provider(), "images": image_provider()}
 
 
 def scene_count(minutes):
@@ -165,6 +189,7 @@ def _run(job, req):
         if job["cancel"]:
             raise Cancelled()
         s = scenes[i]
+        job["detail"] = f"{done[0]} / {total}"
         who = "; ".join(f"{nm}: {looks[nm]}" for nm in s.get("characters", []) if nm in looks)
         prompt = f"{STYLES[req['style']]}. {s['image_prompt']}. Characters: {who}. No text, no letters, no watermark."
         (d / f"img_{i}.jpg").write_bytes(gen_image(prompt, req["ratio"], seed))
@@ -173,7 +198,7 @@ def _run(job, req):
             job["pct"] = round(10 + 35 * done[0] / total)
             job["detail"] = f"{done[0]} / {total}"
 
-    with ThreadPoolExecutor(3) as ex:
+    with ThreadPoolExecutor(3 if image_provider() == "fal" else 1) as ex:
         for f in [ex.submit(draw, i) for i in range(total)]:
             f.result()
     _set(job)
@@ -305,6 +330,10 @@ def parse_json(text):
 
 
 def llm(prompt):
+    return llm_claude(prompt) if script_provider() == "claude" else llm_gemini(prompt)
+
+
+def llm_claude(prompt):
     r = httpx.post("https://api.anthropic.com/v1/messages", timeout=180,
                    headers={"x-api-key": os.environ["ANTHROPIC_API_KEY"], "anthropic-version": "2023-06-01"},
                    json={"model": LLM_MODEL, "max_tokens": 8000,
@@ -315,7 +344,58 @@ def llm(prompt):
     return "".join(b.get("text", "") for b in r.json()["content"])
 
 
+def llm_gemini(prompt):
+    """Free Gemini API key (Google AI Studio). Tries a few model names, waits if the free quota is busy."""
+    last = "unknown error"
+    for model in GEMINI_MODELS:
+        for attempt in range(3):
+            r = httpx.post(f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
+                           timeout=180, headers={"x-goog-api-key": os.environ["GEMINI_API_KEY"]},
+                           json={"systemInstruction": {"parts": [{"text": "You are a children's story screenwriter. Reply with JSON only."}]},
+                                 "contents": [{"parts": [{"text": prompt}]}],
+                                 "generationConfig": {"responseMimeType": "application/json", "maxOutputTokens": 8000}})
+            if r.status_code == 429 or r.status_code >= 500:
+                last = f"{r.status_code} (free quota busy)"
+                time.sleep(15 * (attempt + 1))
+                continue
+            if r.status_code == 404:
+                last = f"model {model} not found"
+                break
+            if r.status_code >= 400:
+                raise RuntimeError(f"Script AI error {r.status_code}: {r.text[:200]}")
+            parts = r.json()["candidates"][0]["content"]["parts"]
+            return "".join(p.get("text", "") for p in parts)
+    raise RuntimeError("Script AI (Gemini) is not available right now: " + last)
+
+
 def gen_image(prompt, ratio, seed):
+    return gen_image_fal(prompt, ratio, seed) if image_provider() == "fal" else gen_image_free(prompt, ratio, seed)
+
+
+def gen_image_free(prompt, ratio, seed):
+    """Pollinations: free, no key. Anonymous use is about 1 image per 15 seconds, so requests are spaced out."""
+    from urllib.parse import quote
+    w, h = (576, 1024) if ratio == "9:16" else (1024, 576)
+    url = f"https://image.pollinations.ai/prompt/{quote(prompt[:700])}?width={w}&height={h}&seed={seed}&model=flux&nologo=true"
+    last = "unknown error"
+    for attempt in range(5):
+        with _free_lock:
+            wait = _free_last[0] + FREE_GAP - time.time()
+            if wait > 0:
+                time.sleep(wait)
+            _free_last[0] = time.time()
+        try:
+            r = httpx.get(url, timeout=180, follow_redirects=True)
+            if r.status_code == 200 and r.content[:3] in (b"\xff\xd8\xff", b"\x89PN"):
+                return r.content
+            last = f"{r.status_code}"
+        except Exception as e:
+            last = str(e)
+        time.sleep(5 * (attempt + 1))
+    raise RuntimeError("Free image service is busy or not available right now: " + last)
+
+
+def gen_image_fal(prompt, ratio, seed):
     size = "portrait_16_9" if ratio == "9:16" else "landscape_16_9"
     last = None
     for attempt in range(3):
